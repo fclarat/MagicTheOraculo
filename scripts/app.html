@@ -872,7 +872,7 @@ function imgUrl(c) {
 function cardHTML(c) {
   const url = imgUrl(c);
   const img = url ? `<img class="mtg-img" src="${url}" alt="${esc(c.n)}"` +
-    ` loading="lazy" onerror="this.remove()">` : '';
+    ` onerror="this.remove()">` : '';
   return `<div class="reveal">${cssCard(c)}${img}</div>`;
 }
 function cssCard(c) {
