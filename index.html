@@ -454,11 +454,19 @@ const FM = CARDS.map(c => {
   return a;
 });
 
-// gentle popularity prior (only breaks ties; never dominates)
-const PRIOR = CARDS.map(c => 1 / Math.pow((c.rk || 9000) + 40, 0.28));
-
 // reliability model used to PLAN questions (how a truthful player answers)
 const P_YES = { 1: 0.85, 0: 0.15, [-1]: 0.5 };
+
+// Tunable knobs (defaults chosen with the in-page simulator, see scripts).
+// Popularity prior: weight = 1 / (rank + BASE) ^ EXP. Higher EXP => the oracle
+// leans harder on well-known cards, converging in fewer questions on average.
+// "Precision (mind-reader)" tuning, chosen with scripts/optimize.js: keep the
+// satisfying single-card guess, only fall back to a pick-list for genuine twins.
+let PRIOR_EXP = 0.35, PRIOR_BASE = 40, PRIOR_NULL = 9000; // mild popularity lean breaks ties toward famous cards
+let SEL_BAND  = 0.9;    // randomize only among questions within this frac of best gain
+let GUESS_P   = 0.86;   // confidence needed to make a single confident guess
+let LIST_COVER = 0.9;   // only show the list when a tiny cluster already owns ~everything
+let LIST_MAX_Q = 18;    // hard cap: commit to a guess or list by this many questions
 
 // feature id -> index, and the logically-structured groups we prune against
 const FID = {}; FEATS.forEach((f, i) => FID[f.id] = i);
@@ -469,9 +477,13 @@ const COLOR_IDS = ['white','blue','black','red','green'];
 let logp, asked, answers, history, qcount, guessed;
 
 function resetState() {
-  const s = PRIOR.reduce((a, b) => a + b, 0);
   logp = new Float64Array(NC);
-  for (let i = 0; i < NC; i++) logp[i] = Math.log(PRIOR[i] / s);
+  let s = 0;
+  for (let i = 0; i < NC; i++) {
+    const w = 1 / Math.pow((CARDS[i].rk || PRIOR_NULL) + PRIOR_BASE, PRIOR_EXP);
+    logp[i] = w; s += w;
+  }
+  for (let i = 0; i < NC; i++) logp[i] = Math.log(logp[i] / s);
   asked = new Set();
   answers = new Map();          // featureIdx -> asserted P(true), for undo & pruning
   history = [];
@@ -586,7 +598,7 @@ function nextFeature(p) {
   // games don't open identically every time. Late-game one question dominates,
   // so the band collapses to it and we still converge fast.
   const best = cands[0].gain;
-  const pool = cands.filter(c => c.gain >= best * 0.9 && c.gain > 1e-4);
+  const pool = cands.filter(c => c.gain >= best * SEL_BAND && c.gain > 1e-4);
   if (!pool.length) return cands[0];
   let r = Math.random() * pool.reduce((s, c) => s + c.gain, 0), pick = pool[0];
   for (const c of pool) { r -= c.gain; if (r <= 0) { pick = c; break; } }
@@ -630,7 +642,7 @@ function shouldGuess(p) {
   if (!t.length) return null;
   const [a, b] = t;
   const ratio = b ? a.p / b.p : Infinity;
-  if (a.p >= 0.86) return a;
+  if (a.p >= GUESS_P) return a;
   if (qcount >= 8 && a.p >= 0.60 && ratio >= 4) return a;
   if (qcount >= 20) return a;
   return null;
@@ -658,8 +670,17 @@ function turn() {
 
   const g = shouldGuess(p);
   if (g) { renderGuess(g); return; }
+  // Early pick-list: if a handful of cards already own most of the belief (a
+  // twin cluster), show them now instead of asking more questions no one can
+  // answer apart. Keeps the single-guess moment for clear cases.
+  {
+    const top = topCards(p, 8);
+    const cover = top.reduce((s, c) => s + c.p, 0);
+    const cont = top.filter(c => c.p >= top[0].p * 0.15);
+    if (cover >= LIST_COVER && cont.length >= 2) { renderList(cont); return; }
+  }
   const nf = nextFeature(p);
-  if (nf.j < 0 || nf.gain < 0.03 || qcount >= 18) {
+  if (nf.j < 0 || nf.gain < 0.03 || qcount >= LIST_MAX_Q) {
     // No useful question left (usually only feature-twins remain) or we've asked
     // enough. If several cards are still in real contention, show them to pick
     // from -- much better than spelling out a name. Otherwise a single guess.
