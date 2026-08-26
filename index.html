@@ -545,9 +545,14 @@ function entropy(p) {
 }
 
 // pick the next question by expected information gain, but (a) skip anything
-// logically implied by earlier answers, and (b) score on a SHARPENED belief so
-// the soft error-tolerance tail can't make us re-ask to "reconfirm".
-const BETA = 1.8;
+// logically implied by earlier answers, and (b) score on a SHARPENED belief.
+// Higher BETA focuses questions on separating the leading candidates (confirm
+// the suspect) instead of evenly halving the diffuse tail -- which, starting
+// from a peaked prior, reaches a single card in FEWER questions. Sweet spot
+// 2.4 (scripts/optimize.js + live 32k check): ~0.9 fewer questions than 1.8 at
+// the same 98% hit and ~30% list rate; past ~2.5 it just converts guesses to
+// lists for little gain.
+let BETA = 2.4;
 function nextFeature(p) {
   const C = constraints();
 

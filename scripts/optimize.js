@@ -21,11 +21,11 @@ const COLOR_IDS = ['white', 'blue', 'black', 'red', 'green'];
 const P_YES = { 1: 0.85, 0: 0.15, '-1': 0.5 };
 const PRUNE = 12;   // drop cards whose log-prob is >e^12 below the max (perfect player keeps the true card at the top, so this is safe and shrinks the set fast)
 
-const DEF = {
-  PRIOR_EXP: 0.28, PRIOR_BASE: 40, PRIOR_NULL: 9000, BETA: 1.8,
+const DEF = {   // "mago" operating point
+  PRIOR_EXP: 0.35, PRIOR_BASE: 40, PRIOR_NULL: 9000, BETA: 1.8,
   GUESS_P: 0.86, GUESS_MIN_Q: 8, GUESS_MID_P: 0.6, GUESS_RATIO: 4, GUESS_MAX_Q: 20,
   MIN_GAIN: 0.03, LIST_MAX_Q: 18, LIST_N: 8, LIST_FRAC: 0.15,
-  LIST_COVER: 2, ANS_YES: 0.9,   // LIST_COVER > 1 disables the early-list trigger
+  LIST_COVER: 0.9, ANS_YES: 0.9,
 };
 
 function constraints(answers) { let lo = 0, hi = 99; const cYes = new Set(), cNo = new Set(); let clYes = false, clNo = false, mYes = false, mNo = false; for (const [j, a] of answers) { const id = FEATS[j].id, yes = a >= 0.85, no = a <= 0.15; if (CMC_THR[id]) { const [t, N] = CMC_THR[id]; if (t === 'ge') { if (yes) lo = Math.max(lo, N); else if (no) hi = Math.min(hi, N - 1); } else { if (yes) hi = Math.min(hi, N); else if (no) lo = Math.max(lo, N + 1); } } else if (COLOR_IDS.includes(id)) { if (yes) cYes.add(id); else if (no) cNo.add(id); } else if (id === 'colorless') { if (yes) clYes = true; else if (no) clNo = true; } else if (id === 'multicolor') { if (yes) mYes = true; else if (no) mNo = true; } } return { lo, hi, cYes, cNo, clYes, clNo, mYes, mNo }; }
@@ -115,19 +115,11 @@ const N_SAMPLE = +process.argv[2] || 500;
 const POP = []; for (let i = 0; i < N_SAMPLE; i++) POP.push(i);
 
 const combos = [
-  ['baseline', {}],
-  ['prior .45', { PRIOR_EXP: 0.45 }],
-  ['prior .60', { PRIOR_EXP: 0.60 }],
-  ['prior .80', { PRIOR_EXP: 0.80 }],
-  ['ans .93', { ANS_YES: 0.93 }],
-  ['ans .96', { ANS_YES: 0.96 }],
-  ['earlyList .60', { LIST_COVER: 0.60 }],
-  ['earlyList .72', { LIST_COVER: 0.72 }],
-  ['listMaxQ 13', { LIST_MAX_Q: 13 }],
-  ['p.6 + ans.94', { PRIOR_EXP: 0.6, ANS_YES: 0.94 }],
-  ['p.6 + early.68', { PRIOR_EXP: 0.6, LIST_COVER: 0.68 }],
-  ['p.6+ans.94+early.68', { PRIOR_EXP: 0.6, ANS_YES: 0.94, LIST_COVER: 0.68 }],
-  ['aggressive', { PRIOR_EXP: 0.7, ANS_YES: 0.95, LIST_COVER: 0.62, LIST_MAX_Q: 14 }],
+  ['BETA 3.0', { BETA: 3.0 }],
+  ['BETA 3.5', { BETA: 3.5 }],
+  ['BETA 4.0', { BETA: 4.0 }],
+  ['BETA 5.0', { BETA: 5.0 }],
+  ['BETA 6.0', { BETA: 6.0 }],
 ];
 
 console.log(`cards=${NC} features=${NF}  sample=top ${POP.length} popular\n`);
