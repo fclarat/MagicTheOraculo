@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+Thumbs.db
+
+# generated / bulk data
+data/*.gz
+data/*.jsonl
+data/cards.json
+
+# Claude Artifact build (not for Pages)
+artifact.html

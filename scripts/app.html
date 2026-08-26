@@ -1,0 +1,934 @@
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@400;500;600&display=swap');
+
+  /* ---- Committed single world: a candlelit oracle's parlor. Painted
+     explicitly so it holds on any host theme. ------------------------------ */
+  :root {
+    color-scheme: dark;
+    --void:      #0a0910;   /* obsidian ground, faint violet bias */
+    --ink:       #12101d;   /* raised surface */
+    --ink-2:     #191627;   /* cards / inputs */
+    --smoke:     #2a2540;   /* borders */
+    --smoke-2:   #3b3556;
+    --parchment: #ece2c9;   /* primary text, warm candle-lit */
+    --muted:     #a29bbb;   /* secondary text, violet-grey */
+    --faint:     #6a6484;
+    --gold:      #e3b45a;   /* candle-gold accent */
+    --gold-dim:  #a9873f;
+    /* mana colors, used only as data accents */
+    --mW:#f4ecd0; --mU:#2f92d6; --mB:#8b7fb0; --mR:#dc5138; --mG:#3aa564; --mC:#b7b0a2;
+    --good:#57c98a; --bad:#e0685a;
+    --shadow: 0 24px 60px -20px rgba(0,0,0,.75);
+    --ring: 0 0 0 1px var(--smoke);
+    font-synthesis: none;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1100px 620px at 50% -8%, #1a1530 0%, rgba(26,21,48,0) 60%),
+      radial-gradient(800px 500px at 88% 108%, #1c132a 0%, rgba(28,19,42,0) 55%),
+      var(--void);
+    color: var(--parchment);
+    font-family: 'Spectral', Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  #stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  .wrap {
+    position: relative; z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: clamp(20px, 4vw, 44px) 20px 64px;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  /* ---- masthead ---------------------------------------------------------- */
+  header { text-align: center; margin-bottom: 8px; }
+  .sigil {
+    font-size: 30px; line-height: 1;
+    filter: drop-shadow(0 2px 10px rgba(227,180,90,.35));
+  }
+  .wordmark {
+    font-family: 'Cinzel', serif; font-weight: 700;
+    letter-spacing: .09em;
+    font-size: clamp(22px, 5vw, 30px);
+    margin: 6px 0 2px;
+    background: linear-gradient(180deg, #f6e7bf, var(--gold) 70%, var(--gold-dim));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline {
+    font-style: italic; color: var(--muted); font-size: 14.5px;
+    letter-spacing: .01em; margin: 0;
+  }
+
+  main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+  /* ---- shared bits ------------------------------------------------------- */
+  .eyebrow {
+    font-family: 'Jost', sans-serif; text-transform: uppercase;
+    letter-spacing: .28em; font-size: 11px; font-weight: 600;
+    color: var(--faint);
+  }
+  .btn {
+    font-family: 'Jost', sans-serif; font-weight: 500; letter-spacing: .02em;
+    cursor: pointer; border-radius: 12px; border: 1px solid var(--smoke-2);
+    background: linear-gradient(180deg, var(--ink-2), var(--ink));
+    color: var(--parchment); padding: 13px 18px; font-size: 15px;
+    transition: transform .12s ease, border-color .2s ease, background .2s ease, box-shadow .2s;
+  }
+  .btn:hover { border-color: var(--gold-dim); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .btn-primary {
+    background: linear-gradient(180deg, #f0cf7a, var(--gold));
+    color: #241a06; border-color: #f0cf7a; font-weight: 600;
+    box-shadow: 0 10px 30px -12px rgba(227,180,90,.6);
+  }
+  .btn-primary:hover { border-color: #ffe29a; }
+
+  .screen { display: none; animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
+  .screen.active { display: block; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  /* ---- intro ------------------------------------------------------------- */
+  .intro-orb { margin: 26px auto 22px; }
+  .lede {
+    text-align: center; max-width: 42ch; margin: 0 auto 26px;
+    color: var(--parchment); font-size: 18.5px;
+  }
+  .lede b { color: var(--gold); font-weight: 600; }
+  .intro-actions { display: flex; justify-content: center; }
+  .foot-note {
+    text-align: center; color: var(--faint); font-size: 12.5px;
+    margin-top: 30px; font-family: 'Jost', sans-serif; letter-spacing: .02em;
+  }
+
+  /* ---- the scrying orb --------------------------------------------------- */
+  .orb {
+    --glow: radial-gradient(circle at 38% 32%, #efe4c8, #b9a7d8 40%, #4a3d6e 72%, #241d3a 100%);
+    width: clamp(140px, 34vw, 190px); aspect-ratio: 1; border-radius: 50%;
+    margin-inline: auto; position: relative;
+    background: var(--glow);
+    box-shadow:
+      inset 0 0 40px rgba(0,0,0,.45),
+      inset -8px -12px 30px rgba(0,0,0,.55),
+      0 0 60px -6px var(--aura, rgba(155,120,220,.45)),
+      var(--shadow);
+    transition: box-shadow .8s ease, background .8s ease;
+  }
+  .orb::after { /* glass highlight */
+    content:""; position:absolute; inset:0; border-radius:50%;
+    background: radial-gradient(circle at 34% 26%, rgba(255,255,255,.55), rgba(255,255,255,0) 34%);
+    mix-blend-mode: screen;
+  }
+  .orb.think { animation: breathe 3.4s ease-in-out infinite; }
+  @keyframes breathe { 0%,100%{ transform: translateY(0) scale(1);} 50%{ transform: translateY(-5px) scale(1.015);} }
+  .orb-base {
+    width: 62%; height: 20px; margin: -6px auto 0; border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,0) 70%);
+  }
+
+  /* ---- game -------------------------------------------------------------- */
+  .meter-row {
+    display: flex; align-items: center; gap: 14px; justify-content: space-between;
+    font-family: 'Jost', sans-serif; font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--faint); margin: 4px 2px 18px;
+  }
+  .meter { flex: 1; height: 6px; border-radius: 99px; background: var(--ink-2);
+           box-shadow: var(--ring); overflow: hidden; }
+  .meter > i {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    border-radius: 99px; transition: width .6s cubic-bezier(.2,.7,.2,1);
+  }
+  .qnum { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  .question {
+    font-size: clamp(23px, 5.2vw, 31px); line-height: 1.28; text-align: center;
+    text-wrap: balance; margin: 26px auto 4px; max-width: 18ch; min-height: 2.4em;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .question em { color: var(--gold); font-style: italic; }
+
+  .answers { display: grid; gap: 10px; margin: 26px auto 0; max-width: 440px; }
+  .answers .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ans { width: 100%; justify-content: center; display: flex; }
+  .ans-yes:hover  { border-color: var(--good); box-shadow: 0 0 0 1px var(--good) inset; }
+  .ans-no:hover   { border-color: var(--bad);  box-shadow: 0 0 0 1px var(--bad) inset; }
+  .ans[data-k="yes"]     { border-left: 3px solid var(--good); }
+  .ans[data-k="no"]      { border-left: 3px solid var(--bad); }
+  .ans[data-k="prob"]    { border-left: 3px solid color-mix(in srgb, var(--good) 55%, var(--smoke)); }
+  .ans[data-k="probnot"] { border-left: 3px solid color-mix(in srgb, var(--bad) 55%, var(--smoke)); }
+
+  .subrow { display: flex; justify-content: space-between; align-items: center;
+            margin-top: 18px; }
+  .link {
+    background: none; border: none; color: var(--faint); cursor: pointer;
+    font-family: 'Jost', sans-serif; font-size: 13px; letter-spacing: .06em;
+    padding: 6px 4px; transition: color .2s;
+  }
+  .link:hover { color: var(--gold); }
+  .link:disabled { opacity: .35; cursor: default; }
+
+  /* ---- suspects peek ----------------------------------------------------- */
+  .suspects { margin-top: 22px; border-top: 1px solid var(--smoke); padding-top: 14px; }
+  .suspects summary {
+    cursor: pointer; list-style: none; color: var(--muted);
+    font-family: 'Jost', sans-serif; font-size: 12px; letter-spacing: .12em;
+    text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+  }
+  .suspects summary::-webkit-details-marker { display: none; }
+  .suspects summary::before { content: "☾"; color: var(--gold-dim); }
+  .suspect { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px;
+             align-items: center; margin: 10px 0; }
+  .suspect .nm { font-size: 14.5px; color: var(--parchment); }
+  .suspect .pct { font-family: 'Jost'; font-variant-numeric: tabular-nums;
+                  font-size: 12.5px; color: var(--muted); }
+  .sbar { grid-column: 1 / -1; height: 4px; border-radius: 99px; background: var(--ink-2); overflow: hidden; }
+  .sbar > i { display:block; height:100%; background: linear-gradient(90deg,var(--gold-dim),var(--gold)); transition: width .5s; }
+
+  /* ---- the revealed card ------------------------------------------------- */
+  .cardwrap { display: flex; justify-content: center; margin: 8px 0 22px;
+              perspective: 1400px; }
+  .reveal { position: relative; display: inline-block; }
+  .mtg-img { position: absolute; inset: 0; width: 100%; height: 100%;
+             object-fit: cover; border-radius: 14px; box-shadow: var(--shadow);
+             animation: reveal .6s cubic-bezier(.2,.8,.2,1) both; }
+  .mtg {
+    width: 300px; max-width: 82vw; aspect-ratio: 63 / 88; border-radius: 14px;
+    padding: 12px; color: #1b1710; position: relative;
+    background: var(--frame, linear-gradient(160deg, #d3cab6, #8d846f));
+    box-shadow: var(--shadow), inset 0 0 0 2px rgba(0,0,0,.25), inset 0 0 0 6px rgba(255,255,255,.06);
+    animation: reveal .7s cubic-bezier(.2,.8,.2,1) both;
+    font-family: 'Cinzel', serif;
+  }
+  @keyframes reveal { from { opacity:0; transform: rotateY(28deg) translateY(10px); } to { opacity:1; transform:none; } }
+  .mtg .bar {
+    background: linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,.35));
+    border: 1px solid rgba(0,0,0,.35); border-radius: 8px;
+    padding: 7px 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .mtg .nm { font-weight: 600; font-size: 16px; line-height: 1.15; flex: 1; }
+  .mtg .pips { display: flex; gap: 3px; }
+  .pip {
+    width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center;
+    font-family: 'Jost', sans-serif; font-weight: 600; font-size: 12px;
+    box-shadow: inset 0 -2px 3px rgba(0,0,0,.35), 0 1px 1px rgba(0,0,0,.3); color: #fff;
+  }
+  .mtg .art {
+    margin: 8px 0; height: 128px; border-radius: 6px; border: 1px solid rgba(0,0,0,.4);
+    background:
+      radial-gradient(120px 80px at 30% 20%, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
+      var(--art, linear-gradient(160deg,#2c2740,#0e0b18));
+    display: grid; place-items: center; color: rgba(255,255,255,.5); font-size: 34px;
+    overflow: hidden;
+  }
+  .mtg .art .cat { filter: drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
+  .mtg .type { font-size: 12.5px; padding: 5px 8px; }
+  .mtg .txt {
+    background: rgba(255,251,240,.72); border: 1px solid rgba(0,0,0,.3);
+    border-radius: 8px; margin-top: 8px; padding: 10px 11px; min-height: 66px;
+    font-family: 'Spectral', serif; font-size: 13px; line-height: 1.45; color: #241f16;
+  }
+  .mtg .ptbadge {
+    position: absolute; right: 14px; bottom: 12px;
+    background: linear-gradient(180deg, #fbf6ea, #c9bea4);
+    border: 1px solid rgba(0,0,0,.45); border-radius: 7px; padding: 3px 10px;
+    font-weight: 700; font-size: 15px;
+  }
+  .mtg .rar { position: absolute; right: 16px; top: 148px; width: 13px; height: 13px;
+              border-radius: 50%; box-shadow: 0 0 8px currentColor, inset 0 0 3px rgba(0,0,0,.5); }
+
+  /* ---- result screens ---------------------------------------------------- */
+  .result-title {
+    font-family: 'Cinzel', serif; font-weight: 700; text-align: center;
+    font-size: clamp(26px, 6vw, 36px); margin: 6px 0 2px;
+    text-wrap: balance;
+  }
+  .result-sub { text-align: center; color: var(--muted); font-style: italic; margin: 0 0 22px; }
+  .center-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
+  .stat { text-align: center; color: var(--muted); font-family: 'Jost'; font-size: 14px; letter-spacing:.03em; }
+  .stat b { color: var(--gold); font-size: 20px; font-variant-numeric: tabular-nums; }
+
+  .loselist { max-width: 380px; margin: 0 auto; display: grid; gap: 8px; }
+  .loselist .li {
+    display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+    padding: 10px 14px; border-radius: 10px; background: var(--ink); box-shadow: var(--ring);
+  }
+  .loselist .li .nm { font-size: 15px; }
+  .loselist .li .mv { font-family: 'Jost'; font-size: 12px; color: var(--faint); }
+
+  /* ---- pick-list endgame ------------------------------------------------ */
+  .pick-list { display: grid; gap: 8px; max-width: 460px; margin: 6px auto 0; }
+  .pick-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; align-items: center;
+    text-align: left; background: linear-gradient(180deg, var(--ink-2), var(--ink));
+    border: 1px solid var(--smoke-2); border-radius: 12px; padding: 12px 14px;
+    cursor: pointer; color: var(--parchment); font-family: 'Spectral', serif;
+    transition: border-color .15s, transform .1s;
+  }
+  .pick-row:hover { border-color: var(--gold); transform: translateY(-1px); }
+  .pick-row:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .pick-nm { font-weight: 600; font-size: 16px; }
+  .pick-pips { display: flex; gap: 3px; justify-self: end; }
+  .pick-t { grid-column: 1 / -1; font-size: 12px; color: var(--muted);
+            font-family: 'Jost', sans-serif; }
+
+  /* ---- three-answer layout ---------------------------------------------- */
+  .ans-idk {
+    background: transparent; border-style: dashed; border-color: var(--smoke-2);
+    color: var(--muted);
+  }
+  .ans-idk:hover { color: var(--parchment); border-color: var(--faint); transform: none; }
+
+  .suspect-empty { color: var(--faint); font-size: 13px; font-style: italic; padding: 8px 2px; }
+
+  /* ---- end-of-game recap ------------------------------------------------ */
+  .recap { max-width: 440px; margin: 22px auto 0; text-align: left; }
+  .recap > summary {
+    cursor: pointer; list-style: none; color: var(--muted); padding: 8px 0;
+    font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: .16em;
+    text-transform: uppercase; text-align: center;
+  }
+  .recap > summary::-webkit-details-marker { display: none; }
+  .recap-row {
+    display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; align-items: center;
+    padding: 7px 2px; border-top: 1px solid rgba(255,255,255,.05); font-size: 14px;
+  }
+  .recap-row .ra {
+    font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 600;
+    padding: 2px 0; border-radius: 99px; text-align: center;
+  }
+  .recap-row .ra.yes { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
+  .recap-row .ra.no  { background: color-mix(in srgb, var(--bad) 20%, transparent);  color: var(--bad); }
+  .recap-row .rq { color: var(--muted); }
+  .recap-row .rp {
+    font-family: 'Jost', sans-serif; font-variant-numeric: tabular-nums;
+    color: var(--gold); font-size: 13px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+  @media (max-width: 420px) {
+    .answers .row2 { grid-template-columns: 1fr; }
+  }
+</style>
+
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="wrap">
+  <header>
+    <div class="sigil">🔮</div>
+    <h1 class="wordmark">Magic The Oráculo</h1>
+    <p class="tagline">Pensá una carta. Yo la adivino.</p>
+  </header>
+
+  <main>
+    <!-- INTRO -->
+    <section id="screen-intro" class="screen active">
+      <div class="orb intro-orb think" aria-hidden="true"></div>
+      <div class="orb-base" aria-hidden="true"></div>
+      <p class="lede">Pensá en una carta de <b>Magic: The Gathering</b>. No me la digas.
+        Voy a hacerte preguntas sobre sus <b>propiedades</b> y leer tu mente en pocas jugadas.</p>
+      <div class="intro-actions">
+        <button class="btn btn-primary" id="btn-start">Empezar la sesión</button>
+      </div>
+      <p class="foot-note" id="intro-foot">Cargando el grimorio…</p>
+    </section>
+
+    <!-- GAME -->
+    <section id="screen-game" class="screen">
+      <div class="meter-row">
+        <span class="qnum">Pregunta <b id="q-num">1</b></span>
+        <div class="meter" title="certeza del oráculo"><i id="q-meter"></i></div>
+        <span id="q-cert">0%</span>
+      </div>
+      <div class="orb think" id="game-orb" aria-hidden="true"></div>
+      <div class="orb-base" aria-hidden="true"></div>
+      <h2 class="question" id="q-text">…</h2>
+      <div class="answers">
+        <div class="row2">
+          <button class="btn ans ans-yes" data-k="yes" data-a="0.9">Sí</button>
+          <button class="btn ans ans-no" data-k="no" data-a="0.1">No</button>
+        </div>
+        <button class="btn ans ans-idk" data-k="idk" data-a="0.5">No sé</button>
+      </div>
+      <div class="subrow">
+        <button class="link" id="btn-back" disabled>‹ Atrás</button>
+        <button class="link" id="btn-restart">Reiniciar</button>
+      </div>
+      <details class="suspects" id="suspects">
+        <summary>Lo que sospecha el oráculo</summary>
+        <div id="suspect-list"></div>
+      </details>
+    </section>
+
+    <!-- GUESS -->
+    <section id="screen-guess" class="screen">
+      <p class="eyebrow" style="text-align:center">Mi visión dice…</p>
+      <div class="cardwrap"><div id="guess-card"></div></div>
+      <h2 class="question" style="min-height:auto;margin-top:0">¿Es <em id="guess-name">esta</em> tu carta?</h2>
+      <div class="center-actions">
+        <button class="btn btn-primary" id="btn-yes-final">¡Sí, esa es!</button>
+        <button class="btn" id="btn-no-final">No, seguí probando</button>
+      </div>
+    </section>
+
+    <!-- PICK LIST (endgame for feature-twins: pick instead of spelling a name) -->
+    <section id="screen-list" class="screen">
+      <p class="eyebrow" style="text-align:center">Reduje a un puñado casi idéntico</p>
+      <h2 class="question" style="min-height:auto;margin:10px auto 2px">¿Es alguna de estas?</h2>
+      <div id="list-cards" class="pick-list"></div>
+      <div class="center-actions">
+        <button class="btn" id="btn-none">Ninguna de estas</button>
+      </div>
+    </section>
+
+    <!-- WIN -->
+    <section id="screen-win" class="screen">
+      <h2 class="result-title">Te leí la mente 🔮</h2>
+      <p class="result-sub" id="win-sub">El oráculo nunca falla.</p>
+      <div class="cardwrap"><div id="win-card"></div></div>
+      <p class="stat">Adivinada en <b id="win-q">0</b> preguntas</p>
+      <details class="recap" id="recap">
+        <summary>Cómo te fui leyendo</summary>
+        <div id="recap-list"></div>
+      </details>
+      <div class="center-actions">
+        <button class="btn btn-primary" id="btn-again">Jugar de nuevo</button>
+      </div>
+    </section>
+
+    <!-- LOSE -->
+    <section id="screen-lose" class="screen">
+      <h2 class="result-title">Me ganaste esta vez</h2>
+      <p class="result-sub">No estaba en mi grimorio, o me despistaste. Mis mejores sospechas eran:</p>
+      <div class="loselist" id="lose-list"></div>
+      <div class="center-actions">
+        <button class="btn btn-primary" id="btn-again2">Volver a intentar</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const DATA = __DATA__;
+
+/* ------------------------------------------------------------------ *
+ *  Engine: Bayesian belief over cards + information-gain questions.
+ *  Unlike a fixed decision tree, every answer only re-weights cards
+ *  (never eliminates), so a wrong answer is recoverable, and the next
+ *  question is always the most informative one given the beliefs.
+ * ------------------------------------------------------------------ */
+const FEATS = DATA.features;                 // [{id,q,c}]
+const NF = FEATS.length;
+const CARDS = DATA.cards;
+const NC = CARDS.length;
+
+// feature matrix: 1 / 0 / -1(unknown)
+const FM = CARDS.map(c => {
+  const a = new Int8Array(NF);
+  for (let j = 0; j < NF; j++) {
+    const ch = c.f[j];
+    a[j] = ch === '1' ? 1 : ch === '0' ? 0 : -1;
+  }
+  return a;
+});
+
+// gentle popularity prior (only breaks ties; never dominates)
+const PRIOR = CARDS.map(c => 1 / Math.pow((c.rk || 9000) + 40, 0.28));
+
+// reliability model used to PLAN questions (how a truthful player answers)
+const P_YES = { 1: 0.85, 0: 0.15, [-1]: 0.5 };
+
+// feature id -> index, and the logically-structured groups we prune against
+const FID = {}; FEATS.forEach((f, i) => FID[f.id] = i);
+const CMC_THR = { cmc_le1:['le',1], cmc_ge3:['ge',3], cmc_ge4:['ge',4],
+                  cmc_ge5:['ge',5], cmc_ge6:['ge',6], cmc_ge8:['ge',8] };
+const COLOR_IDS = ['white','blue','black','red','green'];
+
+let logp, asked, answers, history, qcount, guessed;
+
+function resetState() {
+  const s = PRIOR.reduce((a, b) => a + b, 0);
+  logp = new Float64Array(NC);
+  for (let i = 0; i < NC; i++) logp[i] = Math.log(PRIOR[i] / s);
+  asked = new Set();
+  answers = new Map();          // featureIdx -> asserted P(true), for undo & pruning
+  history = [];
+  qcount = 0;
+  guessed = new Set();
+}
+
+// Derive hard logical constraints from DEFINITE (Sí/No) answers only, so a
+// question already implied by earlier answers is never asked again -- e.g.
+// "cost >= 3?" after "cost >= 4? yes", or "black?" after we know it's mono-green.
+function constraints() {
+  let lo = 0, hi = 99;
+  const cYes = new Set(), cNo = new Set();
+  let clYes = false, clNo = false, mYes = false, mNo = false;
+  for (const [j, a] of answers) {
+    const id = FEATS[j].id, yes = a >= 0.85, no = a <= 0.15;
+    if (CMC_THR[id]) {
+      const [t, N] = CMC_THR[id];
+      if (t === 'ge') { if (yes) lo = Math.max(lo, N); else if (no) hi = Math.min(hi, N - 1); }
+      else            { if (yes) hi = Math.min(hi, N); else if (no) lo = Math.max(lo, N + 1); }
+    } else if (COLOR_IDS.includes(id)) { if (yes) cYes.add(id); else if (no) cNo.add(id); }
+    else if (id === 'colorless')  { if (yes) clYes = true; else if (no) clNo = true; }
+    else if (id === 'multicolor') { if (yes) mYes = true; else if (no) mNo = true; }
+  }
+  return { lo, hi, cYes, cNo, clYes, clNo, mYes, mNo };
+}
+
+function determined(j, C) {
+  const id = FEATS[j].id;
+  if (CMC_THR[id]) {
+    const [t, N] = CMC_THR[id];
+    return t === 'ge' ? (C.lo >= N || C.hi < N) : (C.hi <= N || C.lo > N);
+  }
+  if (COLOR_IDS.includes(id)) {
+    if (C.clYes) return true;                          // colorless => no colour
+    if (C.cYes.has(id) || C.cNo.has(id)) return true;
+    if (C.cYes.size >= 1 && C.mNo) return true;        // mono established => rest are no
+    if (C.cNo.size >= 4 && C.clNo) return true;        // 4 no + not colorless => 5th implied
+    return false;
+  }
+  if (id === 'colorless')  return C.clYes || C.clNo || C.cYes.size >= 1;
+  if (id === 'multicolor') return C.mYes || C.mNo || C.cYes.size >= 2 || C.clYes || C.cNo.size >= 4;
+  return false;
+}
+
+function probs() {                            // normalized P from logp
+  let m = -Infinity;
+  for (let i = 0; i < NC; i++) if (logp[i] > m) m = logp[i];
+  const p = new Float64Array(NC); let s = 0;
+  for (let i = 0; i < NC; i++) { p[i] = Math.exp(logp[i] - m); s += p[i]; }
+  for (let i = 0; i < NC; i++) p[i] /= s;
+  return p;
+}
+
+function entropy(p) {
+  let h = 0;
+  for (let i = 0; i < NC; i++) { const x = p[i]; if (x > 1e-12) h -= x * Math.log(x); }
+  return h;
+}
+
+// pick the next question by expected information gain, but (a) skip anything
+// logically implied by earlier answers, and (b) score on a SHARPENED belief so
+// the soft error-tolerance tail can't make us re-ask to "reconfirm".
+const BETA = 1.8;
+function nextFeature(p) {
+  const C = constraints();
+
+  // human touch: the moment we learn one colour, ask "is it multicolor?" instead
+  // of grinding through the other four colours one by one.
+  if (C.cYes.size === 1 && !C.mYes && !C.mNo && !C.clYes) {
+    const mj = FID.multicolor;
+    if (mj != null && !asked.has(mj)) return { j: mj, gain: 1 };
+  }
+
+  // Only evaluate the ACTIVE set -- cards with non-negligible probability
+  // (capped at 3000). Over 32k cards the tail contributes ~nothing to gain, so
+  // this keeps every question O(features * 3000) instead of O(features * 32k).
+  let pmax = 0;
+  for (let i = 0; i < NC; i++) if (p[i] > pmax) pmax = p[i];
+  const floor = pmax * 1e-5;
+  let idx = [];
+  for (let i = 0; i < NC; i++) if (p[i] > floor) idx.push(i);
+  if (idx.length > 3000) { idx.sort((a, b) => p[b] - p[a]); idx.length = 3000; }
+  const m = idx.length;
+
+  // sharpen over the active set (selection only; belief/guessing use raw p)
+  const ps = new Float64Array(m); let s = 0;
+  for (let k = 0; k < m; k++) { ps[k] = Math.pow(p[idx[k]], BETA); s += ps[k]; }
+  for (let k = 0; k < m; k++) ps[k] /= s;
+  let H = 0;
+  for (let k = 0; k < m; k++) { const x = ps[k]; if (x > 1e-12) H -= x * Math.log(x); }
+
+  const cands = [];
+  for (let j = 0; j < NF; j++) {
+    if (asked.has(j) || determined(j, C)) continue;
+    let pyes = 0;
+    for (let k = 0; k < m; k++) pyes += ps[k] * P_YES[FM[idx[k]][j]];
+    const pno = 1 - pyes;
+    if (pyes < 1e-6 || pno < 1e-6) continue;      // useless (everyone same)
+    let hy = 0, hn = 0;
+    for (let k = 0; k < m; k++) {
+      const w = P_YES[FM[idx[k]][j]];
+      const ay = ps[k] * w / pyes, an = ps[k] * (1 - w) / pno;
+      if (ay > 1e-12) hy -= ay * Math.log(ay);
+      if (an > 1e-12) hn -= an * Math.log(an);
+    }
+    cands.push({ j, gain: H - (pyes * hy + pno * hn) });
+  }
+  if (!cands.length) return { j: -1, gain: 0 };
+  cands.sort((a, b) => b.gain - a.gain);
+  // Pick randomly among the near-best questions (within 10% of the top gain) so
+  // games don't open identically every time. Late-game one question dominates,
+  // so the band collapses to it and we still converge fast.
+  const best = cands[0].gain;
+  const pool = cands.filter(c => c.gain >= best * 0.9 && c.gain > 1e-4);
+  if (!pool.length) return cands[0];
+  let r = Math.random() * pool.reduce((s, c) => s + c.gain, 0), pick = pool[0];
+  for (const c of pool) { r -= c.gain; if (r <= 0) { pick = c; break; } }
+  return pick;
+}
+
+function applyAnswer(j, a, k) {                 // a = asserted P(feature true)
+  history.push({ j, a, k, snapshot: Float64Array.from(logp) });
+  for (let i = 0; i < NC; i++) {
+    const v = FM[i][j];
+    logp[i] += Math.log(v === 1 ? a : v === 0 ? (1 - a) : 0.5);  // ? = uninformative
+  }
+  asked.add(j);
+  answers.set(j, a);
+  if (k !== 'idk') qcount++;                    // "No sé" gives no clue: doesn't count
+}
+
+// single-pass top-n (descending) so we never full-sort 32k cards per turn
+function topCards(p, n) {
+  const top = [];                     // kept sorted descending, length <= n
+  for (let i = 0; i < NC; i++) {
+    if (guessed.has(i)) continue;
+    const v = p[i];
+    if (top.length < n) {
+      top.push({ i, p: v, card: CARDS[i] });
+      if (top.length === n) top.sort((a, b) => b.p - a.p);
+    } else if (v > top[n - 1].p) {
+      top[n - 1] = { i, p: v, card: CARDS[i] };
+      let k = n - 1;                   // bubble the new entry up into place
+      while (k > 0 && top[k].p > top[k - 1].p) {
+        const t = top[k]; top[k] = top[k - 1]; top[k - 1] = t; k--;
+      }
+    }
+  }
+  return top.sort((a, b) => b.p - a.p);
+}
+
+// decide whether to guess now
+function shouldGuess(p) {
+  const t = topCards(p, 2);
+  if (!t.length) return null;
+  const [a, b] = t;
+  const ratio = b ? a.p / b.p : Infinity;
+  if (a.p >= 0.86) return a;
+  if (qcount >= 8 && a.p >= 0.60 && ratio >= 4) return a;
+  if (qcount >= 20) return a;
+  return null;
+}
+
+/* ------------------------------------------------------------------ *
+ *  UI
+ * ------------------------------------------------------------------ */
+const $ = s => document.querySelector(s);
+const screens = {};
+['intro','game','guess','list','win','lose'].forEach(k => screens[k] = $('#screen-' + k));
+function show(k) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[k].classList.add('active');
+  screens[k].style.animation = 'none'; void screens[k].offsetWidth; screens[k].style.animation = '';
+}
+
+let curFeature = null, pending = null;
+
+function turn() {
+  const p = probs();
+  updateMeter(p);
+  updateSuspects(p);
+  updateAura(p);
+
+  const g = shouldGuess(p);
+  if (g) { renderGuess(g); return; }
+  const nf = nextFeature(p);
+  if (nf.j < 0 || nf.gain < 0.03 || qcount >= 18) {
+    // No useful question left (usually only feature-twins remain) or we've asked
+    // enough. If several cards are still in real contention, show them to pick
+    // from -- much better than spelling out a name. Otherwise a single guess.
+    const top = topCards(p, 8);
+    const contenders = top.filter(c => c.p >= top[0].p * 0.15);
+    if (contenders.length >= 2) { renderList(contenders); return; }
+    if (top[0]) { renderGuess(top[0]); return; }
+  }
+  curFeature = nf.j;
+  $('#q-num').textContent = qcount + 1;
+  const qt = $('#q-text');
+  qt.style.animation = 'none'; void qt.offsetWidth;
+  qt.innerHTML = FEATS[nf.j].q.replace(/\{X\}/g, '<em>{X}</em>');
+  qt.style.animation = 'rise .4s ease both';
+  $('#btn-back').disabled = history.length === 0;
+  show('game');
+}
+
+function updateMeter(p) {
+  const top = topCards(p, 1)[0];
+  const pct = top ? Math.round(top.p * 100) : 0;
+  $('#q-meter').style.width = Math.min(100, Math.max(3, pct)) + '%';
+  $('#q-cert').textContent = pct + '%';
+}
+
+const MANA_COL = { W:'--mW', U:'--mU', B:'--mB', R:'--mR', G:'--mG' };
+function colorMass(p) {
+  const m = { W:0,U:0,B:0,R:0,G:0,C:0 };
+  const top = topCards(p, 40);
+  for (const {p:pp, card} of top) {
+    const co = card.co;
+    if (!co) { m.C += pp; continue; }
+    for (const ch of co) m[ch] = (m[ch]||0) + pp / co.length;
+  }
+  return m;
+}
+function updateAura(p) {
+  const m = colorMass(p);
+  const entries = Object.entries(m).sort((a,b)=>b[1]-a[1]).filter(e=>e[1]>0.02);
+  const cs = getComputedStyle(document.documentElement);
+  const col = k => k==='C' ? '#8f88a8' : cs.getPropertyValue(MANA_COL[k]).trim();
+  const orbs = document.querySelectorAll('.orb');
+  if (!entries.length) return;
+  const c1 = col(entries[0][0]);
+  const c2 = col((entries[1]||entries[0])[0]);
+  orbs.forEach(o => {
+    o.style.setProperty('--glow',
+      `radial-gradient(circle at 38% 32%, #efe4c8, ${c1} 42%, ${c2} 74%, #201a34 100%)`);
+    o.style.setProperty('--aura', c1 + '88');
+  });
+}
+
+function updateSuspects(p) {
+  const list = $('#suspect-list');
+  const top = topCards(p, 3).filter(e => e.p >= 0.15);   // hide anything under 15%
+  if (!top.length) {
+    list.innerHTML = '<div class="suspect-empty">Todavía muy abierto para sospechar…</div>';
+    return;
+  }
+  list.innerHTML = top.map(({p:pp, card}) => `
+    <div class="suspect">
+      <span class="nm">${esc(card.n)}</span>
+      <span class="pct">${(pp*100).toFixed(1)}%</span>
+      <span class="sbar"><i style="width:${Math.min(100,pp*100).toFixed(1)}%"></i></span>
+    </div>`).join('');
+}
+
+/* ---- answering ---- */
+const ANS_LABEL = { yes: 'Sí', no: 'No', idk: 'No sé' };
+function answer(k, a) {
+  if (curFeature == null) return;
+  applyAnswer(curFeature, a, k);
+  curFeature = null;
+  turn();
+}
+document.querySelectorAll('.ans').forEach(b =>
+  b.addEventListener('click', () => answer(b.dataset.k, parseFloat(b.dataset.a))));
+
+$('#btn-back').addEventListener('click', () => {
+  if (!history.length) return;
+  const h = history.pop();
+  logp = h.snapshot; asked.delete(h.j); answers.delete(h.j); qcount = Math.max(0, qcount - 1);
+  curFeature = null; turn();
+});
+$('#btn-restart').addEventListener('click', begin);
+$('#btn-start').addEventListener('click', begin);
+$('#btn-again').addEventListener('click', begin);
+$('#btn-again2').addEventListener('click', begin);
+
+/* ---- guessing ---- */
+function renderGuess(entry) {
+  pending = entry;
+  $('#guess-card').innerHTML = cardHTML(entry.card);
+  $('#guess-name').textContent = entry.card.n;
+  show('guess');
+}
+$('#btn-yes-final').addEventListener('click', () => {
+  $('#win-card').innerHTML = cardHTML(pending.card);
+  $('#win-q').textContent = qcount;
+  $('#win-sub').textContent = qcount <= 8 ? '…y casi sin esfuerzo.' : 'Costó, pero caí parado.';
+  renderRecap(pending.i);
+  show('win');
+});
+$('#btn-no-final').addEventListener('click', () => {
+  guessed.add(pending.i);
+  logp[pending.i] += Math.log(0.02);           // strongly downweight, don't kill
+  pending = null;
+  if (guessed.size >= 4 || guessed.size >= NC) return giveUp();
+  turn();
+});
+
+// probability of card i under an arbitrary logp snapshot
+function probOf(lp, i) {
+  let mx = -Infinity;
+  for (let x = 0; x < NC; x++) if (lp[x] > mx) mx = lp[x];
+  let s = 0;
+  for (let x = 0; x < NC; x++) s += Math.exp(lp[x] - mx);
+  return Math.exp(lp[i] - mx) / s;
+}
+// "how I read you": each counted answer + the guessed card's probability after it
+function renderRecap(fi) {
+  const rows = [];
+  for (let m = 0; m < history.length; m++) {
+    if (history[m].k === 'idk') continue;            // No sé didn't count
+    const after = (m + 1 < history.length) ? history[m + 1].snapshot : logp;
+    rows.push({ k: history[m].k, q: FEATS[history[m].j].q, pct: probOf(after, fi) * 100 });
+  }
+  const fmt = p => p >= 1 ? Math.round(p) + '%' : p >= 0.1 ? p.toFixed(1) + '%' : '<0.1%';
+  $('#recap-list').innerHTML = rows.map(r => `
+    <div class="recap-row">
+      <span class="ra ${r.k}">${ANS_LABEL[r.k]}</span>
+      <span class="rq">${esc(r.q)}</span>
+      <span class="rp">${fmt(r.pct)}</span>
+    </div>`).join('');
+}
+
+let listPending = [];
+function renderList(list) {
+  listPending = list;
+  $('#list-cards').innerHTML = list.map((e, ix) => `
+    <button class="pick-row" data-ix="${ix}">
+      <span class="pick-nm">${esc(e.card.n)}</span>
+      <span class="pick-pips">${pips(e.card.mc)}</span>
+      <span class="pick-t">${esc(e.card.t)}</span>
+    </button>`).join('');
+  $('#list-cards').querySelectorAll('.pick-row').forEach(b =>
+    b.addEventListener('click', () => {
+      const e = listPending[+b.dataset.ix];
+      $('#win-card').innerHTML = cardHTML(e.card);
+      $('#win-q').textContent = qcount;
+      $('#win-sub').textContent = 'Estaba entre mis sospechas.';
+      renderRecap(e.i);
+      show('win');
+    }));
+  show('list');
+}
+$('#btn-none').addEventListener('click', () => {
+  for (const e of listPending) { guessed.add(e.i); logp[e.i] += Math.log(0.02); }
+  listPending = [];
+  if (guessed.size >= 14 || guessed.size >= NC) return giveUp();
+  turn();
+});
+
+function giveUp() {
+  const p = probs();
+  const top = Array.from(p.keys()).sort((x,y)=>p[y]-p[x]).slice(0,5);
+  $('#lose-list').innerHTML = top.map(i => `
+    <div class="li"><span class="nm">${esc(CARDS[i].n)}</span>
+    <span class="mv">${esc(CARDS[i].t)}</span></div>`).join('');
+  show('lose');
+}
+
+function begin() { resetState(); curFeature = null; pending = null; turn(); }
+
+/* ------------------------------------------------------------------ *
+ *  Card rendering (CSS "card" — no external art, CSP-safe)
+ * ------------------------------------------------------------------ */
+const PIP_BG = { W:'#f3ecd4', U:'#2f8fd4', B:'#2c2836', R:'#d5492f', G:'#2f9e57', C:'#b9b2a6' };
+const PIP_FG = { W:'#3a3320', C:'#3a352b' };
+function pips(mc) {
+  if (!mc) return '';
+  const syms = mc.match(/\{[^}]+\}/g) || [];
+  return syms.map(s => {
+    const t = s.slice(1, -1);
+    if (PIP_BG[t]) return pip(PIP_BG[t], PIP_FG[t] || '#fff', t);
+    if (/^\d+$/.test(t) || t === 'X') return pip('#cbc4b3', '#2a2620', t);
+    // hybrid/phyrexian etc. -> generic
+    return pip('#b9a7c9', '#2a2333', t.replace('/', ''));
+  }).join('');
+}
+function pip(bg, fg, txt) {
+  return `<span class="pip" style="background:${bg};color:${fg}">${esc(txt)}</span>`;
+}
+
+const FRAMES = {
+  W: 'linear-gradient(160deg,#efe7cf,#c9bf9f)',
+  U: 'linear-gradient(160deg,#bcdcf1,#5b8fc0)',
+  B: 'linear-gradient(160deg,#b9b2c4,#4c4658)',
+  R: 'linear-gradient(160deg,#f0c3ad,#c05f42)',
+  G: 'linear-gradient(160deg,#c6ddb8,#5f9160)',
+  M2:'linear-gradient(160deg,#f1e3b0,#c9a24e)',
+  C: 'linear-gradient(160deg,#d9d5cc,#9a958a)',
+  L: 'linear-gradient(160deg,#d8c9ad,#8a7350)',
+};
+const RAR = { c:'#3a3a3a', u:'#9fb2bf', r:'#d7b45a', m:'#e07b3a' };
+function frameFor(c) {
+  if (c.t.includes('Land')) return FRAMES.L;
+  if (!c.co) return FRAMES.C;
+  if (c.co.length >= 2) return FRAMES.M2;
+  return FRAMES[c.co] || FRAMES.C;
+}
+function imgUrl(c) {
+  if (!c.id) return '';
+  return `https://cards.scryfall.io/normal/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`;
+}
+// Real Scryfall art layered over the CSS card. The image is LINKED, not embedded
+// (so we don't ship 32k pictures). If it's blocked -- the Claude Artifact's CSP
+// blocks remote images -- or 404s, onerror removes it and the CSS card shows
+// through. On GitHub Pages or locally the real card art loads normally.
+function cardHTML(c) {
+  const url = imgUrl(c);
+  const img = url ? `<img class="mtg-img" src="${url}" alt="${esc(c.n)}"` +
+    ` loading="lazy" onerror="this.remove()">` : '';
+  return `<div class="reveal">${cssCard(c)}${img}</div>`;
+}
+function cssCard(c) {
+  const pt = c.pt ? `<div class="ptbadge">${esc(c.pt)}</div>` : '';
+  const rar = `<span class="rar" style="color:${RAR[c.r]||'#999'}"></span>`;
+  return `
+  <div class="mtg" style="--frame:${frameFor(c)}">
+    <div class="bar">
+      <span class="nm">${esc(c.n)}</span>
+      <span class="pips">${pips(c.mc)}</span>
+    </div>
+    <div class="art"><span class="cat">🐈‍⬛</span></div>
+    ${rar}
+    <div class="bar type">${esc(c.t)}</div>
+    <div class="txt">${esc(flavorFor(c))}</div>
+    ${pt}
+  </div>`;
+}
+function flavorFor(c) {
+  const bits = [];
+  if (c.co === '') bits.push('incolora');
+  else if (c.co.length >= 2) bits.push('multicolor');
+  bits.push('coste ' + c.cmc);
+  const r = {c:'común',u:'infrecuente',r:'rara',m:'mítica'}[c.r];
+  if (r) bits.push(r);
+  return 'Una carta ' + bits.join(', ') + '.';
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, m =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m])); }
+
+/* ---- ambient starfield ---- */
+(function stars() {
+  const c = $('#stars'), x = c.getContext('2d');
+  let w, h, pts;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function size() {
+    w = c.width = innerWidth; h = c.height = innerHeight;
+    pts = Array.from({ length: Math.min(46, (w*h)/34000) }, () => ({
+      x: Math.random()*w, y: Math.random()*h,
+      r: Math.random()*1.1 + .3, s: Math.random()*.16 + .04,
+      a: Math.random()*.32 + .1
+    }));
+  }
+  size(); addEventListener('resize', size);
+  function frame() {
+    x.clearRect(0,0,w,h);
+    for (const p of pts) {
+      x.globalAlpha = p.a; x.fillStyle = '#e9dcb8';
+      x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill();
+      if (!reduce) { p.y -= p.s; if (p.y < -2) { p.y = h + 2; p.x = Math.random()*w; } }
+    }
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+$('#intro-foot').textContent = NC + ' cartas en el grimorio · elegí una y desafiame';
+</script>
