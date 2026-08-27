@@ -488,29 +488,17 @@ const COLOR_IDS = ['white','blue','black','red','green'];
 
 // ---- Multiple-choice ("group") questions: one tap eliminates most of the field
 // (~2.6 bits vs ~0.9 for a yes/no). Derived from existing fields, no rebuild.
-const CMAP = { W:0, U:1, B:2, R:3, G:4 };
-function colorCat(c) { if (!c.co) return 6; if (c.co.length >= 2) return 5; return CMAP[c.co]; }
-function typeCat(c) {
-  const t = c.t;
-  if (t.includes('Creature')) return 0;
-  if (t.includes('Planeswalker')) return 5;
-  if (t.includes('Land')) return 6;
-  if (t.includes('Instant')) return 1;
-  if (t.includes('Sorcery')) return 2;
-  if (t.includes('Artifact')) return 3;
-  if (t.includes('Enchantment')) return 4;
-  return -1;
-}
+const CMAP = { G:0, R:1, W:2, B:3, U:4 };
+function colorCat(c) { if (!c.co) return 5; if (c.co.length >= 2) return 6; return CMAP[c.co]; }
+// Just two multiple-choice questions (color + mana value); everything else is yes/no.
 const GROUPS = [
   { id:'g_color', q:'¿De qué color es la carta?',
-    opts:['Blanca','Azul','Negra','Roja','Verde','Multicolor','Incolora'],
+    opts:['Verde','Roja','Blanca','Negra','Azul','Incolora','Multicolor'],
     covers:['white','blue','black','red','green','colorless','multicolor'], val:colorCat },
   { id:'g_cmc', q:'¿Cuánto cuesta de maná?',
-    opts:['0','1','2','3','4','5','6+'],
-    covers:['cmc0','cmc_le1','cmc_ge3','cmc_ge4','cmc_ge5','cmc_ge6','cmc_ge8'], val:c=>Math.min(c.cmc,6) },
-  { id:'g_type', q:'¿Qué tipo de carta es?',
-    opts:['Criatura','Instantáneo','Conjuro','Artefacto','Encantamiento','Planeswalker','Tierra'],
-    covers:['creature','instant','sorcery','artifact','enchantment','planeswalker','land'], val:typeCat },
+    opts:['1','2','3','4','5+'],
+    covers:['cmc0','cmc_le1','cmc_ge3','cmc_ge4','cmc_ge5','cmc_ge6','cmc_ge8'],
+    val:c => c.cmc <= 1 ? 0 : c.cmc >= 5 ? 4 : c.cmc - 1 },
 ];
 const NG = GROUPS.length;
 const GVAL = GROUPS.map(g => { const a = new Int8Array(NC); for (let i = 0; i < NC; i++) { const v = g.val(CARDS[i]); a[i] = (v == null || v < 0) ? -1 : v; } return a; });
@@ -920,7 +908,7 @@ function probOf(lp, i) {
   return Math.exp(lp[i] - mx) / s;
 }
 // "how I read you": each counted answer + the guessed card's probability after it
-const GSHORT = ['Color', 'Coste', 'Tipo'];
+const GSHORT = ['Color', 'Coste'];
 function renderRecap(fi) {
   const rows = [];
   for (let m = 0; m < history.length; m++) {
