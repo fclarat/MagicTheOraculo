@@ -290,6 +290,13 @@
   }
   .ans-idk:hover { color: var(--parchment); border-color: var(--faint); transform: none; }
 
+  /* ---- multiple-choice (group) question ---- */
+  .grid-opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (min-width: 460px) { .grid-opts { grid-template-columns: repeat(3, 1fr); } }
+  .grid-opts .opt { display: flex; justify-content: center; align-items: center; }
+  #group-idk { border-style: dashed; background: transparent; color: var(--muted); }
+  #group-idk:hover { color: var(--parchment); border-color: var(--faint); transform: none; }
+
   .suspect-empty { color: var(--faint); font-size: 13px; font-style: italic; padding: 8px 2px; }
 
   /* ---- end-of-game recap ------------------------------------------------ */
@@ -301,15 +308,16 @@
   }
   .recap > summary::-webkit-details-marker { display: none; }
   .recap-row {
-    display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; align-items: center;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;
     padding: 7px 2px; border-top: 1px solid rgba(255,255,255,.05); font-size: 14px;
   }
   .recap-row .ra {
     font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 600;
-    padding: 2px 0; border-radius: 99px; text-align: center;
+    padding: 2px 9px; border-radius: 99px; text-align: center; white-space: nowrap;
   }
   .recap-row .ra.yes { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
   .recap-row .ra.no  { background: color-mix(in srgb, var(--bad) 20%, transparent);  color: var(--bad); }
+  .recap-row .ra.grp { background: color-mix(in srgb, var(--gold) 20%, transparent); color: var(--gold); }
   .recap-row .rq { color: var(--muted); }
   .recap-row .rp {
     font-family: 'Jost', sans-serif; font-variant-numeric: tabular-nums;
@@ -355,12 +363,16 @@
       <div class="orb think" id="game-orb" aria-hidden="true"></div>
       <div class="orb-base" aria-hidden="true"></div>
       <h2 class="question" id="q-text">…</h2>
-      <div class="answers">
+      <div class="answers" id="answers-binary">
         <div class="row2">
           <button class="btn ans ans-yes" data-k="yes" data-a="0.9">Sí</button>
           <button class="btn ans ans-no" data-k="no" data-a="0.1">No</button>
         </div>
         <button class="btn ans ans-idk" data-k="idk" data-a="0.5">No sé</button>
+      </div>
+      <div class="answers" id="answers-group" style="display:none">
+        <div class="grid-opts" id="group-opts"></div>
+        <button class="btn" id="group-idk">No sé</button>
       </div>
       <div class="subrow">
         <button class="link" id="btn-back" disabled>‹ Atrás</button>
@@ -464,7 +476,38 @@ const CMC_THR = { cmc_le1:['le',1], cmc_ge3:['ge',3], cmc_ge4:['ge',4],
                   cmc_ge5:['ge',5], cmc_ge6:['ge',6], cmc_ge8:['ge',8] };
 const COLOR_IDS = ['white','blue','black','red','green'];
 
-let logp, asked, answers, history, qcount, guessed;
+// ---- Multiple-choice ("group") questions: one tap eliminates most of the field
+// (~2.6 bits vs ~0.9 for a yes/no). Derived from existing fields, no rebuild.
+const CMAP = { W:0, U:1, B:2, R:3, G:4 };
+function colorCat(c) { if (!c.co) return 6; if (c.co.length >= 2) return 5; return CMAP[c.co]; }
+function typeCat(c) {
+  const t = c.t;
+  if (t.includes('Creature')) return 0;
+  if (t.includes('Planeswalker')) return 5;
+  if (t.includes('Land')) return 6;
+  if (t.includes('Instant')) return 1;
+  if (t.includes('Sorcery')) return 2;
+  if (t.includes('Artifact')) return 3;
+  if (t.includes('Enchantment')) return 4;
+  return -1;
+}
+const GROUPS = [
+  { id:'g_color', q:'¿De qué color es la carta?',
+    opts:['Blanca','Azul','Negra','Roja','Verde','Multicolor','Incolora'],
+    covers:['white','blue','black','red','green','colorless','multicolor'], val:colorCat },
+  { id:'g_cmc', q:'¿Cuánto cuesta de maná?',
+    opts:['0','1','2','3','4','5','6+'],
+    covers:['cmc0','cmc_le1','cmc_ge3','cmc_ge4','cmc_ge5','cmc_ge6','cmc_ge8'], val:c=>Math.min(c.cmc,6) },
+  { id:'g_type', q:'¿Qué tipo de carta es?',
+    opts:['Criatura','Instantáneo','Conjuro','Artefacto','Encantamiento','Planeswalker','Tierra'],
+    covers:['creature','instant','sorcery','artifact','enchantment','planeswalker','land'], val:typeCat },
+];
+const NG = GROUPS.length;
+const GVAL = GROUPS.map(g => { const a = new Int8Array(NC); for (let i = 0; i < NC; i++) { const v = g.val(CARDS[i]); a[i] = (v == null || v < 0) ? -1 : v; } return a; });
+const GCOVER = GROUPS.map(g => g.covers.map(id => FID[id]).filter(x => x != null));
+const GROUP_AY = 0.85;   // reliability model for a categorical answer (planning)
+
+let logp, asked, answers, history, qcount, guessed, askedGroups;
 
 function resetState() {
   logp = new Float64Array(NC);
@@ -475,6 +518,7 @@ function resetState() {
   }
   for (let i = 0; i < NC; i++) logp[i] = Math.log(logp[i] / s);
   asked = new Set();
+  askedGroups = new Set();
   answers = new Map();          // featureIdx -> asserted P(true), for undo & pruning
   history = [];
   qcount = 0;
@@ -546,13 +590,6 @@ let BETA = 2.4;
 function nextFeature(p) {
   const C = constraints();
 
-  // human touch: the moment we learn one colour, ask "is it multicolor?" instead
-  // of grinding through the other four colours one by one.
-  if (C.cYes.size === 1 && !C.mYes && !C.mNo && !C.clYes) {
-    const mj = FID.multicolor;
-    if (mj != null && !asked.has(mj)) return { j: mj, gain: 1 };
-  }
-
   // Only evaluate the ACTIVE set -- cards with non-negligible probability
   // (capped at 3000). Over 32k cards the tail contributes ~nothing to gain, so
   // this keeps every question O(features * 3000) instead of O(features * 32k).
@@ -572,6 +609,7 @@ function nextFeature(p) {
   for (let k = 0; k < m; k++) { const x = ps[k]; if (x > 1e-12) H -= x * Math.log(x); }
 
   const cands = [];
+  // yes/no features
   for (let j = 0; j < NF; j++) {
     if (asked.has(j) || determined(j, C)) continue;
     let pyes = 0;
@@ -585,19 +623,48 @@ function nextFeature(p) {
       if (ay > 1e-12) hy -= ay * Math.log(ay);
       if (an > 1e-12) hn -= an * Math.log(an);
     }
-    cands.push({ j, gain: H - (pyes * hy + pno * hn) });
+    cands.push({ kind: 'feat', j, gain: H - (pyes * hy + pno * hn) });
   }
-  if (!cands.length) return { j: -1, gain: 0 };
+  // multiple-choice group questions (one tap eliminates most of the field)
+  for (let g = 0; g < NG; g++) {
+    if (askedGroups.has(g)) continue;
+    const gain = groupGain(g, idx, ps, m, H);
+    if (gain > 1e-4) cands.push({ kind: 'group', g, gain });
+  }
+  if (!cands.length) return { kind: 'feat', j: -1, gain: 0 };
   cands.sort((a, b) => b.gain - a.gain);
-  // Pick randomly among the near-best questions (within 10% of the top gain) so
-  // games don't open identically every time. Late-game one question dominates,
-  // so the band collapses to it and we still converge fast.
+  // Pick randomly among the near-best questions (within SEL_BAND of the top) so
+  // games don't open identically. Late-game one question dominates and the band
+  // collapses to it, so we still converge fast.
   const best = cands[0].gain;
   const pool = cands.filter(c => c.gain >= best * SEL_BAND && c.gain > 1e-4);
   if (!pool.length) return cands[0];
   let r = Math.random() * pool.reduce((s, c) => s + c.gain, 0), pick = pool[0];
   for (const c of pool) { r -= c.gain; if (r <= 0) { pick = c; break; } }
   return pick;
+}
+
+// Soft categorical information gain of a group question over the active set,
+// on the same scale as the yes/no gain above (K=2 reduces to the binary case).
+function groupGain(g, idx, ps, m, H) {
+  const gv = GVAL[g], K = GROUPS[g].opts.length;
+  const AY = GROUP_AY, other = (1 - AY) / (K - 1), invK = 1 / K, logInvK = Math.log(invK);
+  const mo = new Float64Array(K), s2 = new Float64Array(K);
+  let mUnk = 0, s2Unk = 0;
+  for (let x = 0; x < m; x++) {
+    const o = gv[idx[x]], pv = ps[x], l = pv > 1e-12 ? pv * Math.log(pv) : 0;
+    if (o < 0) { mUnk += pv; s2Unk += l; } else { mo[o] += pv; s2[o] += l; }
+  }
+  let expH = 0;
+  for (let k = 0; k < K; k++) {
+    let pk = mUnk * invK;
+    for (let o = 0; o < K; o++) pk += mo[o] * (o === k ? AY : other);
+    if (pk < 1e-9) continue;
+    let a = invK * s2Unk, b = mUnk * invK * logInvK;
+    for (let o = 0; o < K; o++) { const L = o === k ? AY : other; a += L * s2[o]; if (L > 0) b += mo[o] * L * Math.log(L); }
+    expH += pk * (-(1 / pk) * (a + b) + Math.log(pk));
+  }
+  return H - expH;
 }
 
 function applyAnswer(j, a, k) {                 // a = asserted P(feature true)
@@ -609,6 +676,20 @@ function applyAnswer(j, a, k) {                 // a = asserted P(feature true)
   asked.add(j);
   answers.set(j, a);
   if (k !== 'idk') qcount++;                    // "No sé" gives no clue: doesn't count
+}
+
+// apply a multiple-choice answer: opt = chosen option index, or -1 for "No sé"
+function applyGroupAnswer(g, opt) {
+  history.push({ group: g, opt, snapshot: Float64Array.from(logp) });
+  if (opt >= 0) {
+    const gv = GVAL[g], K = GROUPS[g].opts.length;
+    const AY = GROUP_AY, other = (1 - AY) / (K - 1);
+    const lY = Math.log(AY), lO = Math.log(other), lU = Math.log(1 / K);
+    for (let i = 0; i < NC; i++) { const o = gv[i]; logp[i] += o < 0 ? lU : (o === opt ? lY : lO); }
+    qcount++;
+    for (const fj of GCOVER[g]) asked.add(fj);   // yes/no features this subsumes
+  }
+  askedGroups.add(g);
 }
 
 // single-pass top-n (descending) so we never full-sort 32k cards per turn
@@ -655,7 +736,7 @@ function show(k) {
   screens[k].style.animation = 'none'; void screens[k].offsetWidth; screens[k].style.animation = '';
 }
 
-let curFeature = null, pending = null;
+let curFeature = null, pending = null, curGroup = null;
 
 function turn() {
   const p = probs();
@@ -675,7 +756,7 @@ function turn() {
     if (cover >= LIST_COVER && cont.length >= 2) { renderList(cont); return; }
   }
   const nf = nextFeature(p);
-  if (nf.j < 0 || nf.gain < 0.03 || qcount >= LIST_MAX_Q) {
+  if (nf.gain < 0.03 || qcount >= LIST_MAX_Q) {
     // No useful question left (usually only feature-twins remain) or we've asked
     // enough. If several cards are still in real contention, show them to pick
     // from -- much better than spelling out a name. Otherwise a single guess.
@@ -684,12 +765,34 @@ function turn() {
     if (contenders.length >= 2) { renderList(contenders); return; }
     if (top[0]) { renderGuess(top[0]); return; }
   }
-  curFeature = nf.j;
+  if (nf.kind === 'group') { renderGroupQuestion(nf.g); return; }
+  // yes/no question
+  curFeature = nf.j; curGroup = null;
+  $('#answers-binary').style.display = '';
+  $('#answers-group').style.display = 'none';
   $('#q-num').textContent = qcount + 1;
   const qt = $('#q-text');
   qt.style.animation = 'none'; void qt.offsetWidth;
   qt.innerHTML = FEATS[nf.j].q.replace(/\{X\}/g, '<em>{X}</em>');
   qt.style.animation = 'rise .4s ease both';
+  $('#btn-back').disabled = history.length === 0;
+  show('game');
+}
+
+function renderGroupQuestion(g) {
+  curFeature = null; curGroup = g;
+  const grp = GROUPS[g];
+  $('#answers-binary').style.display = 'none';
+  $('#answers-group').style.display = '';
+  $('#q-num').textContent = qcount + 1;
+  const qt = $('#q-text');
+  qt.style.animation = 'none'; void qt.offsetWidth;
+  qt.textContent = grp.q;
+  qt.style.animation = 'rise .4s ease both';
+  $('#group-opts').innerHTML = grp.opts.map((o, i) =>
+    `<button class="btn ans opt" data-opt="${i}">${esc(o)}</button>`).join('');
+  $('#group-opts').querySelectorAll('.opt').forEach(b =>
+    b.addEventListener('click', () => { applyGroupAnswer(g, +b.dataset.opt); curGroup = null; turn(); }));
   $('#btn-back').disabled = history.length === 0;
   show('game');
 }
@@ -751,14 +854,25 @@ function answer(k, a) {
   curFeature = null;
   turn();
 }
-document.querySelectorAll('.ans').forEach(b =>
+document.querySelectorAll('#answers-binary .ans').forEach(b =>
   b.addEventListener('click', () => answer(b.dataset.k, parseFloat(b.dataset.a))));
+$('#group-idk').addEventListener('click', () => {
+  if (curGroup == null) return;
+  applyGroupAnswer(curGroup, -1); curGroup = null; turn();
+});
 
 $('#btn-back').addEventListener('click', () => {
   if (!history.length) return;
   const h = history.pop();
-  logp = h.snapshot; asked.delete(h.j); answers.delete(h.j); qcount = Math.max(0, qcount - 1);
-  curFeature = null; turn();
+  logp = h.snapshot;
+  if (h.group != null) {                 // undo a multiple-choice answer
+    askedGroups.delete(h.group);
+    if (h.opt >= 0) { for (const fj of GCOVER[h.group]) asked.delete(fj); qcount = Math.max(0, qcount - 1); }
+  } else {                               // undo a yes/no answer
+    asked.delete(h.j); answers.delete(h.j);
+    if (h.k !== 'idk') qcount = Math.max(0, qcount - 1);
+  }
+  curFeature = null; curGroup = null; turn();
 });
 $('#btn-restart').addEventListener('click', begin);
 $('#btn-start').addEventListener('click', begin);
@@ -796,17 +910,24 @@ function probOf(lp, i) {
   return Math.exp(lp[i] - mx) / s;
 }
 // "how I read you": each counted answer + the guessed card's probability after it
+const GSHORT = ['Color', 'Coste', 'Tipo'];
 function renderRecap(fi) {
   const rows = [];
   for (let m = 0; m < history.length; m++) {
-    if (history[m].k === 'idk') continue;            // No sé didn't count
+    const h = history[m];
     const after = (m + 1 < history.length) ? history[m + 1].snapshot : logp;
-    rows.push({ k: history[m].k, q: FEATS[history[m].j].q, pct: probOf(after, fi) * 100 });
+    if (h.group != null) {
+      if (h.opt < 0) continue;                       // No sé didn't count
+      rows.push({ cls: 'grp', a: GROUPS[h.group].opts[h.opt], q: GSHORT[h.group], pct: probOf(after, fi) * 100 });
+    } else {
+      if (h.k === 'idk') continue;                   // No sé didn't count
+      rows.push({ cls: h.k, a: ANS_LABEL[h.k], q: FEATS[h.j].q, pct: probOf(after, fi) * 100 });
+    }
   }
   const fmt = p => p >= 1 ? Math.round(p) + '%' : p >= 0.1 ? p.toFixed(1) + '%' : '<0.1%';
   $('#recap-list').innerHTML = rows.map(r => `
     <div class="recap-row">
-      <span class="ra ${r.k}">${ANS_LABEL[r.k]}</span>
+      <span class="ra ${r.cls}">${esc(r.a)}</span>
       <span class="rq">${esc(r.q)}</span>
       <span class="rp">${fmt(r.pct)}</span>
     </div>`).join('');
