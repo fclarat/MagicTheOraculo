@@ -16,15 +16,29 @@
   .bar { display:flex; align-items:center; gap:16px; text-decoration:none; color:inherit;
     background:linear-gradient(180deg,var(--ink-2),var(--ink)); border:1px solid var(--smoke-2);
     border-radius:16px; padding:14px 18px 14px 14px; position:relative; overflow:hidden;
+    box-shadow:inset 0 0 0 1px var(--hair), var(--shadow-sm);
     transition:transform .14s ease, border-color .2s, box-shadow .2s; }
   .bar::before { content:""; position:absolute; inset:0; z-index:0; opacity:.55; pointer-events:none;
     background:radial-gradient(360px 150px at 12% 30%, var(--acc), transparent 70%); }
-  .bar:hover { transform:translateY(-2px); border-color:var(--gold-dim); box-shadow:0 16px 40px -24px rgba(0,0,0,.85); }
+  /* gold corner brackets — card-frame feel */
+  .bar::after { content:""; position:absolute; inset:8px; border-radius:11px; pointer-events:none; opacity:.5; z-index:1;
+    background:
+      linear-gradient(var(--gold-dim),var(--gold-dim)) left top/13px 1.5px no-repeat,
+      linear-gradient(var(--gold-dim),var(--gold-dim)) left top/1.5px 13px no-repeat,
+      linear-gradient(var(--gold-dim),var(--gold-dim)) right top/13px 1.5px no-repeat,
+      linear-gradient(var(--gold-dim),var(--gold-dim)) right top/1.5px 13px no-repeat,
+      linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/13px 1.5px no-repeat,
+      linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/1.5px 13px no-repeat,
+      linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/13px 1.5px no-repeat,
+      linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/1.5px 13px no-repeat; }
+  .bar:hover { transform:translateY(-2px); border-color:var(--gold-dim);
+    box-shadow:inset 0 0 0 1px rgba(227,180,90,.3), 0 16px 40px -24px rgba(0,0,0,.85); }
   .bar:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
-  .bar > * { position:relative; z-index:1; }
+  .bar > * { position:relative; z-index:2; }
+  .bar .mana { position:absolute; top:11px; right:13px; z-index:3; }
 
   .pvwrap { width:172px; height:126px; flex:none; display:flex; align-items:center; justify-content:center;
-    overflow:hidden; border-radius:12px; }
+    overflow:hidden; border-radius:12px; box-shadow:inset 0 0 0 1px var(--hair); }
   .pvwrap .pv { width:250px; transform:scale(.58); transform-origin:center; box-shadow:none; }
   .binfo { flex:1; min-width:0; }
   .bt { font-family:'Cinzel',serif; font-weight:600; font-size:clamp(20px,4.6vw,26px); letter-spacing:.02em; margin:0 0 4px; }
@@ -77,28 +91,36 @@
     <div class="sigil">🔮</div>
     <h1 class="wordmark">Magic The Oráculo</h1>
     <p class="tagline">7 formas de adivinar cartas de Magic</p>
+    <div class="manabar" style="margin-top:12px">
+      <span class="mana w">W</span><span class="mana u">U</span><span class="mana b">B</span><span class="mana r">R</span><span class="mana g">G</span>
+    </div>
   </header>
   <p class="intro">Elegí un juego. Todos usan las cartas reales de Scryfall, con modo del día e infinito.</p>
+  <div class="rule"><i>◆</i></div>
 
   <div class="bars">
     <a class="bar" href="oraculo.html" style="--acc:rgba(155,120,220,.34)">
+      <span class="mana m" title="multicolor">✦</span>
       <div class="pvwrap"><div class="pv"><div class="m-orb"></div><div class="m-q">¿Es una criatura?</div>
         <div class="m-pills"><span class="yes">Sí</span><span class="no">No</span><span class="idk">No sé</span></div></div></div>
       <div class="binfo"><h2 class="bt">El Oráculo</h2><p class="bd">Pensá una carta y te la adivino con preguntas en ~10 jugadas.</p><span class="bgo">Jugar ›</span></div>
     </a>
 
     <a class="bar" href="cardle.html" style="--acc:rgba(90,180,110,.30)">
+      <span class="mana g" title="verde">G</span>
       <div class="pvwrap"><div class="pv"><div class="m-art blur"></div>
         <div class="m-chips"><span>🎨 Verde</span><span>💎 3</span><span>🃏 Criatura</span></div></div></div>
       <div class="binfo"><h2 class="bt">Cardle</h2><p class="bd">La carta se revela de a poco: color, tipo, coste, el arte…</p><span class="bgo">Jugar ›</span></div>
     </a>
 
     <a class="bar" href="zoom.html" style="--acc:rgba(47,146,214,.28)">
+      <span class="mana u" title="azul">U</span>
       <div class="pvwrap"><div class="pv"><div class="m-art zoom"></div><div class="m-chips"><span>🔍 se aleja de a poco…</span></div></div></div>
       <div class="binfo"><h2 class="bt">Zoom</h2><p class="bd">Adiviná la carta desde un recorte del arte que se agranda.</p><span class="bgo">Jugar ›</span></div>
     </a>
 
     <a class="bar" href="wordle.html" style="--acc:rgba(227,180,90,.28)">
+      <span class="mana w" title="blanco">W</span>
       <div class="pvwrap"><div class="pv"><div class="m-wg">
         <i class="b"></i><i class="y"></i><i class="g"></i><i class="b"></i><i class="b"></i>
         <i class="g"></i><i class="b"></i><i class="g"></i><i class="y"></i><i class="b"></i>
@@ -107,6 +129,7 @@
     </a>
 
     <a class="bar" href="mtgdle.html" style="--acc:rgba(180,139,208,.28)">
+      <span class="mana b" title="negro">B</span>
       <div class="pvwrap"><div class="pv">
         <div class="m-cells"><i class="g">U</i><i class="y">3↑</i><i class="g">Cr</i><i class="b">R</i><i class="b">M12↓</i></div>
         <div class="m-cells"><i class="b">R</i><i class="g">4</i><i class="b">In</i><i class="g">R</i><i class="y">DOM↓</i></div></div></div>
@@ -114,11 +137,13 @@
     </a>
 
     <a class="bar" href="connections.html" style="--acc:rgba(90,190,120,.28)">
+      <span class="mana r" title="rojo">R</span>
       <div class="pvwrap"><div class="pv"><div class="m-conn" id="mconn"></div></div></div>
       <div class="binfo"><h2 class="bt">Connections</h2><p class="bd">Agrupá 16 cartas en 4 grupos por su conexión oculta.</p><span class="bgo">Jugar ›</span></div>
     </a>
 
     <a class="bar" href="timeline.html" style="--acc:rgba(214,120,60,.26)">
+      <span class="mana c" title="incoloro">◆</span>
       <div class="pvwrap"><div class="pv"><div class="m-tl">
         <div><div class="a"></div><div class="y">1993</div></div><div><div class="a"></div><div class="y">2006</div></div>
         <div><div class="a"></div><div class="y">2014</div></div><div><div class="a"></div><div class="y">2022</div></div></div>

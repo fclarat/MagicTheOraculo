@@ -9,19 +9,27 @@
   --mW:#f4ecd0; --mU:#2f92d6; --mB:#8b7fb0; --mR:#dc5138; --mG:#3aa564; --mC:#b7b0a2;
   --good:#57c98a; --bad:#e0685a; --warn:#e3b45a;
   --shadow:0 24px 60px -20px rgba(0,0,0,.75);
+  --shadow-sm:0 14px 34px -22px rgba(0,0,0,.85);
   --ring:0 0 0 1px var(--smoke);
+  --hair:rgba(227,180,90,.16);   /* gold hairline for card bevels */
 }
 * { box-sizing:border-box; }
 body {
-  margin:0; min-height:100vh; overflow-x:hidden;
+  margin:0; min-height:100vh; overflow-x:hidden; position:relative;
   background:
-    radial-gradient(1100px 620px at 50% -8%, #1a1530 0%, rgba(26,21,48,0) 60%),
-    radial-gradient(800px 500px at 88% 108%, #1c132a 0%, rgba(28,19,42,0) 55%),
+    radial-gradient(1200px 700px at 50% -10%, #221b3c 0%, rgba(34,27,60,0) 62%),
+    radial-gradient(900px 560px at 90% 112%, #241634 0%, rgba(36,22,52,0) 55%),
+    radial-gradient(760px 520px at 6% 26%, #16112b 0%, rgba(22,17,43,0) 60%),
     var(--void);
   color:var(--parchment);
   font-family:'Spectral', Georgia, serif; font-size:17px; line-height:1.6;
   -webkit-font-smoothing:antialiased;
 }
+/* mystical spark from the top + cinematic vignette */
+body::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(680px 360px at 50% -4%, rgba(227,180,90,.06), transparent 70%); }
+body::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  box-shadow:inset 0 0 240px 48px rgba(4,3,10,.72); }
 .wrap { max-width:720px; margin:0 auto; padding:clamp(18px,4vw,40px) 18px 60px; }
 
 .mast { text-align:center; margin-bottom:6px; }
@@ -61,6 +69,45 @@ body {
 .pip { width:21px; height:21px; border-radius:50%; display:inline-grid; place-items:center;
   font-family:'Jost',sans-serif; font-weight:600; font-size:12px; color:#fff;
   box-shadow:inset 0 -2px 3px rgba(0,0,0,.35), 0 1px 1px rgba(0,0,0,.3); }
+
+/* ---- MTG flavor kit (shared) ---- */
+/* WUBRG mana gems — look like the mana cost in a card corner */
+.mana { width:22px; height:22px; border-radius:50%; display:inline-grid; place-items:center; flex:none;
+  font-family:'Jost',sans-serif; font-weight:700; font-size:11px; line-height:1;
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.28), inset 0 -3px 4px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.45); }
+.mana.w { background:radial-gradient(circle at 38% 30%,#fffef2,#e6dcb0 78%); color:#5a4a1e; }
+.mana.u { background:radial-gradient(circle at 38% 30%,#93d2f6,#2b7dbf 80%); color:#06263f; }
+.mana.b { background:radial-gradient(circle at 38% 30%,#b9aecb,#564d6c 82%); color:#efeaf5; }
+.mana.r { background:radial-gradient(circle at 38% 30%,#ffa189,#d13f2b 80%); color:#3a0d06; }
+.mana.g { background:radial-gradient(circle at 38% 30%,#a9e2bf,#2c9a5c 82%); color:#0c2e1b; }
+.mana.c { background:radial-gradient(circle at 38% 30%,#efe9dd,#b0a794 82%); color:#3a3527; }
+.mana.m { background:conic-gradient(from 210deg,#e9dfb6,#2b7dbf,#564d6c,#d13f2b,#2c9a5c,#e9dfb6); color:#241a06; text-shadow:0 1px 1px rgba(0,0,0,.35); }
+.mana.lg { width:30px; height:30px; font-size:14px; }
+
+/* WUBRG motif row */
+.manabar { display:flex; gap:7px; justify-content:center; align-items:center; margin:0; }
+
+/* ornamental divider with a center diamond */
+.rule { display:flex; align-items:center; justify-content:center; gap:11px; max-width:320px; margin:13px auto; }
+.rule::before, .rule::after { content:""; height:1px; flex:1; }
+.rule::before { background:linear-gradient(90deg,transparent,var(--gold-dim)); }
+.rule::after { background:linear-gradient(90deg,var(--gold-dim),transparent); }
+.rule i { color:var(--gold); font-style:normal; font-size:11px; letter-spacing:.3em; opacity:.9; }
+
+/* beveled card frame with gold corner brackets */
+.frame { position:relative; border:1px solid var(--smoke-2); border-radius:16px;
+  background:linear-gradient(180deg,var(--ink-2),var(--ink));
+  box-shadow:inset 0 0 0 1px var(--hair), inset 0 1px 0 rgba(255,255,255,.05), var(--shadow-sm); }
+.frame::after { content:""; position:absolute; inset:7px; border-radius:11px; pointer-events:none; opacity:.55;
+  background:
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left top/13px 1.5px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left top/1.5px 13px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right top/13px 1.5px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right top/1.5px 13px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/13px 1.5px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/1.5px 13px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/13px 1.5px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/1.5px 13px no-repeat; }
 
 /* ---- celebration modal + stats (shared via extras.js) ---- */
 .mto-modal { position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
