@@ -78,9 +78,9 @@ function start(){
   over=false; used=0;
   const seed = mode==='daily' ? hashStr('zoom'+todayKey()) : Math.floor(Math.random()*1e9);
   target = TARGETS[seed % TARGETS.length];
-  // focus point (seeded) so the zoom isn't always dead-center
-  const fx = 25 + (seed % 50), fy = 25 + ((seed>>3) % 50);
-  const art=$('#art'); art.style.transformOrigin = `${fx}% ${fy}%`;
+  // zoom from the centre -- the subject is (almost) always there, so you always
+  // see art (an off-centre crop was landing on dark borders = "no se ve nada").
+  const art=$('#art'); art.style.transformOrigin = '50% 50%';
   art.onerror=()=>{ art.onerror=null; art.src=imgURL(target,'normal'); };
   art.src = imgURL(target,'art_crop');
   $('#result').hidden=true; $('#game').hidden=false; $('#guess').value=''; $('#sugg').innerHTML=''; $('#guesslog').innerHTML='';
@@ -88,9 +88,11 @@ function start(){
   render(); $('#guess').focus();
 }
 function render(){
-  const z = Z0 - (Z0-1)*(used/MAX);
+  // reach 100% (scale 1) on the LAST allowed guess (used === MAX-1), zooming out
+  // a bigger step each time.
+  const z = Math.max(1, Z0 - (Z0-1)*(used/(MAX-1)));
   $('#art').style.transform = `scale(${z.toFixed(2)})`;
-  $('#zbar').style.width = Math.round(100*used/MAX)+'%';
+  $('#zbar').style.width = Math.round(100*used/(MAX-1))+'%';
   $('#tries').textContent = `Intentos: ${MAX-used}/${MAX}`;
 }
 $('#guess').addEventListener('input', e=>{
