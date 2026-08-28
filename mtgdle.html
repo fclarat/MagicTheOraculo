@@ -69,7 +69,8 @@ let POOL=[], NAMES=[], GUESSABLE=[], TARGETS=[], target=null, tries=0, over=fals
 
 fetch('data/games.json').then(r=>r.json()).then(d=>{
   POOL=d.cards; NAMES=POOL.map(c=>c.n);
-  GUESSABLE=POOL.slice(0,4000); TARGETS=POOL.slice(0,1200);
+  GUESSABLE=POOL.slice(0,4000); TARGETS=POOL.filter(c=>c.fam);   // guess famous cards
+  if(!TARGETS.length) TARGETS=POOL.slice(0,600);
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
 

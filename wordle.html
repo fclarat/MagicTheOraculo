@@ -67,7 +67,8 @@ const keyState={};
 
 fetch('data/games.json').then(r=>r.json()).then(d=>{
   POOL=d.cards;
-  WORDS = POOL.filter(c=>/^[A-Za-z]{4,9}$/.test(c.n)).slice(0,260);   // popular single-word names
+  WORDS = POOL.filter(c=>c.fam && /^[A-Za-z]{4,9}$/.test(c.n));   // famous single-word names
+  if(!WORDS.length) WORDS = POOL.filter(c=>/^[A-Za-z]{4,9}$/.test(c.n)).slice(0,120);
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
 

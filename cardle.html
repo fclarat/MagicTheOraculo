@@ -80,7 +80,8 @@ const MAX_TRIES = 6;
 fetch('data/games.json').then(r => r.json()).then(d => {
   POOL = d.cards;
   NAMES = POOL.map(c => c.n);
-  TARGETS = POOL.slice(0, 1200);           // guess a well-known card
+  TARGETS = POOL.filter(c => c.fam && !c.t.includes('Land'));  // famous, non-land (art is recognizable)
+  if (!TARGETS.length) TARGETS = POOL.slice(0, 400);
   $('#loading').hidden = true; $('#game').hidden = false;
   start();
 }).catch(() => { $('#loading').textContent = 'No pude cargar las cartas 😿'; });
