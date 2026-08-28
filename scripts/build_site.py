@@ -5,8 +5,10 @@ Assemble the playable app from one source of truth.
 Reads scripts/app.html (inner content: <style> + markup + <script> with a
 `__DATA__` placeholder) and data/cards.json, then writes:
 
-  index.html     full standalone page (works by double-click or GitHub Pages)
+  oraculo.html   full standalone page for GitHub Pages (linked from the hub)
   artifact.html  inner content only, for publishing as a Claude Artifact
+
+(index.html is the games hub, maintained by hand -- not generated here.)
 """
 import json
 from pathlib import Path
@@ -33,12 +35,12 @@ page = f"""<!doctype html>
 <link rel="icon" href="{FAVICON}">
 </head>
 <body>
+<a href="index.html" style="position:fixed;top:10px;left:12px;z-index:99;color:#a29bbb;text-decoration:none;font:13px 'Jost',sans-serif;letter-spacing:.04em">‹ juegos</a>
 {inner}
 </body>
 </html>
 """
-(ROOT / "index.html").write_text(page, encoding="utf-8")
+(ROOT / "oraculo.html").write_text(page, encoding="utf-8")
 
 kb = len(inner.encode("utf-8")) / 1024
-print(f"Built index.html + artifact.html ({kb:.0f} KB each, "
-      f"data embedded).")
+print(f"Built oraculo.html + artifact.html ({kb:.0f} KB each, data embedded).")

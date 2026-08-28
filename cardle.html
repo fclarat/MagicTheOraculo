@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cardle — Magic The Oráculo</title>
+<meta name="description" content="Adiviná la carta de Magic que se revela de a poco: color, tipo, coste, arte…">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%8E%B4</text></svg>">
+<link rel="stylesheet" href="theme.css">
+<style>
+  main { text-align:center; }
+  .art-wrap { position:relative; width:min(320px,80vw); aspect-ratio:626/457; margin:14px auto 0;
+    border-radius:12px; overflow:hidden; box-shadow:var(--shadow); background:var(--ink-2); }
+  #art { width:100%; height:100%; object-fit:cover; display:block; transition:filter .6s ease; }
+  .art-wrap.empty { display:grid; place-items:center; color:var(--faint); font-size:13px; }
+  .clues { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:16px auto 0; max-width:460px; }
+  .clue { background:var(--ink); border:1px solid var(--smoke); border-radius:10px; padding:8px 12px;
+    font-size:14px; display:flex; align-items:center; gap:8px; animation:pop .35s ease both; }
+  @keyframes pop { from{opacity:0; transform:scale(.9);} to{opacity:1; transform:none;} }
+  .clue .lab { font-family:'Jost',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); }
+  .swatch { width:16px; height:16px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,.4); }
+  .guessrow { position:relative; max-width:440px; margin:20px auto 0; }
+  #guess { width:100%; box-sizing:border-box; background:var(--ink-2); color:var(--parchment);
+    border:1px solid var(--smoke-2); border-radius:12px; padding:13px 15px; font-family:'Spectral',serif; font-size:16px; text-align:center; }
+  #guess:focus { outline:2px solid var(--gold); outline-offset:1px; }
+  .sugg { position:absolute; left:0; right:0; top:52px; z-index:5; display:grid; gap:3px;
+    background:var(--void); border-radius:10px; }
+  .sugg button { text-align:left; background:var(--ink); color:var(--parchment); border:1px solid var(--smoke);
+    border-radius:8px; padding:9px 12px; cursor:pointer; font-family:'Spectral',serif; font-size:14px; }
+  .sugg button:hover { border-color:var(--gold); }
+  .meta { display:flex; align-items:center; justify-content:space-between; max-width:440px; margin:14px auto 0;
+    font-family:'Jost',sans-serif; font-size:13px; color:var(--muted); }
+  .pips-row { display:inline-flex; gap:3px; }
+  .guesslog { max-width:440px; margin:14px auto 0; display:grid; gap:6px; }
+  .gl { display:flex; align-items:center; gap:8px; justify-content:center; color:var(--bad); font-size:14px; }
+  .gl::before { content:"✗"; }
+  .result-title { font-family:'Cinzel',serif; font-weight:700; font-size:clamp(24px,6vw,34px); text-wrap:balance; margin:4px 0; }
+  .center-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:22px; }
+  .foot { color:var(--faint); text-align:center; font-family:'Jost',sans-serif; font-size:13px; margin-top:24px; }
+  .modepick { display:inline-flex; gap:0; border:1px solid var(--smoke-2); border-radius:99px; overflow:hidden; margin:6px 0 0; }
+  .modepick button { background:transparent; border:none; color:var(--muted); padding:7px 16px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13px; }
+  .modepick button.on { background:var(--gold); color:#241a06; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">‹ Volver al hub</a>
+  <header class="mast">
+    <div class="sigil">🎴</div>
+    <h1 class="wordmark">Cardle</h1>
+    <p class="tagline">Se revela de a poco. ¿Qué carta es?</p>
+    <div class="modepick" id="modepick">
+      <button data-mode="daily" class="on">Del día</button>
+      <button data-mode="rand">Infinito</button>
+    </div>
+  </header>
+  <main>
+    <div id="game" hidden>
+      <div class="art-wrap empty" id="art-wrap"><img id="art" alt="" hidden><span id="art-ph">🎴 arte oculto</span></div>
+      <div class="clues" id="clues"></div>
+      <div class="guessrow">
+        <input id="guess" type="text" autocomplete="off" spellcheck="false" placeholder="Escribí el nombre de la carta…">
+        <div class="sugg" id="sugg"></div>
+      </div>
+      <div class="meta">
+        <span id="tries"></span>
+        <button class="btn" id="skip" style="padding:8px 14px">Revelar otra pista ▸</button>
+      </div>
+      <div class="guesslog" id="guesslog"></div>
+    </div>
+    <div id="result" hidden></div>
+    <p class="foot" id="loading">Cargando el grimorio…</p>
+  </main>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let POOL = [], NAMES = [], TARGETS = [], target = null, revealed = 0, used = 0, over = false, mode = 'daily';
+const MAX_TRIES = 6;
+
+fetch('data/games.json').then(r => r.json()).then(d => {
+  POOL = d.cards;
+  NAMES = POOL.map(c => c.n);
+  TARGETS = POOL.slice(0, 1200);           // guess a well-known card
+  $('#loading').hidden = true; $('#game').hidden = false;
+  start();
+}).catch(() => { $('#loading').textContent = 'No pude cargar las cartas 😿'; });
+
+/* ---- deterministic daily pick ---- */
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+
+function imgURL(c, kind){ return `https://cards.scryfall.io/${kind}/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`; }
+
+/* ---- clue builders (in reveal order; only applicable ones) ---- */
+const COLW = { W:'--mW', U:'--mU', B:'--mB', R:'--mR', G:'--mG' };
+const COLNAME = { W:'Blanca', U:'Azul', B:'Negra', R:'Roja', G:'Verde' };
+function colorClue(c){
+  const cs = getComputedStyle(document.documentElement);
+  if (!c.co) return `<span class="swatch" style="background:#8f88a8"></span>Incolora`;
+  if (c.co.length >= 2) return c.co.split('').map(ch=>`<span class="swatch" style="background:${cs.getPropertyValue(COLW[ch]).trim()}"></span>`).join('') + ' Multicolor';
+  return `<span class="swatch" style="background:${cs.getPropertyValue(COLW[c.co]).trim()}"></span>${COLNAME[c.co]}`;
+}
+const PIP_BG = { W:'#f3ecd4', U:'#2f8fd4', B:'#2c2836', R:'#d5492f', G:'#2f9e57', C:'#b9b2a6' };
+function pipsHTML(mc){
+  if(!mc) return '—';
+  return (mc.match(/\{[^}]+\}/g)||[]).map(s=>{ const t=s.slice(1,-1);
+    const bg = PIP_BG[t] || (/^\d+$/.test(t)||t==='X' ? '#cbc4b3' : '#b9a7c9');
+    const fg = (t==='W'||t==='C'||/^\d+$/.test(t)||t==='X') ? '#2a2620' : '#fff';
+    return `<span class="pip" style="background:${bg};color:${fg}">${t.replace('/','')}</span>`; }).join('');
+}
+function mainType(t){ return t.split('—')[0].trim(); }
+function subType(t){ return t.includes('—') ? t.split('—')[1].trim() : ''; }
+function initialClue(c){ return c.n.split(/\s+/).map(w=>w[0].toUpperCase()+'·'.repeat(Math.max(0,w.length-1))).join('  '); }
+const RARNAME = { c:'Común', u:'Infrecuente', r:'Rara', m:'Mítica' };
+
+function buildClues(c){
+  const list = [
+    { lab:'Color', html: colorClue(c) },
+    { lab:'Tipo', html: esc(mainType(c.t)) },
+    { lab:'Coste', html: `<span class="pips-row">${pipsHTML(c.mc)}</span> · ${c.cmc}` },
+    { lab:'Rareza', html: RARNAME[c.r] || '—' },
+  ];
+  if (subType(c.t)) list.push({ lab:'Subtipo', html: esc(subType(c.t)) });
+  if (c.pt) list.push({ lab:'Fuerza/Resist.', html: esc(c.pt) });
+  list.push({ lab:'Iniciales', html: `<span style="letter-spacing:.05em">${esc(initialClue(c))}</span>` });
+  return list;
+}
+let CLUES = [];
+
+/* ---- game flow ---- */
+function start(){
+  over = false; used = 0; revealed = 1;
+  if (mode === 'daily') target = TARGETS[hashStr('cardle'+todayKey()) % TARGETS.length];
+  else target = TARGETS[Math.floor(Math.random()*TARGETS.length)];
+  CLUES = buildClues(target);
+  $('#result').hidden = true; $('#game').hidden = false;
+  $('#guess').value=''; $('#sugg').innerHTML=''; $('#guesslog').innerHTML=''; $('#guess').disabled=false; $('#skip').disabled=false;
+  // art starts hidden/blurred
+  const aw=$('#art-wrap'), art=$('#art');
+  aw.classList.remove('empty'); $('#art-ph').hidden=true; art.hidden=false;
+  art.onerror = ()=>{ art.onerror=null; art.src = imgURL(target,'normal'); };
+  art.src = imgURL(target, 'art_crop');
+  render();
+  $('#guess').focus();
+}
+function render(){
+  // clues
+  $('#clues').innerHTML = CLUES.slice(0, revealed).map(c=>`<div class="clue"><span class="lab">${c.lab}</span>${c.html}</div>`).join('');
+  // art blur: from 22px down to 4px across the tries; clear on win
+  const lvl = used;
+  const blur = Math.max(3, 22 - lvl*3.5);
+  $('#art').style.filter = `blur(${blur}px)`;
+  $('#tries').textContent = `Intentos: ${MAX_TRIES-used}/${MAX_TRIES}`;
+}
+function reveal(){ if (revealed < CLUES.length) revealed++; }
+
+$('#guess').addEventListener('input', e=>{
+  const q=e.target.value.trim().toLowerCase(), box=$('#sugg');
+  if(q.length<2){ box.innerHTML=''; return; }
+  const hits=[]; for(let i=0;i<POOL.length && hits.length<7;i++) if(NAMES[i].toLowerCase().includes(q)) hits.push(i);
+  box.innerHTML = hits.map(i=>`<button data-n="${esc(NAMES[i])}">${esc(NAMES[i])}</button>`).join('');
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>submit(b.dataset.n));
+});
+$('#guess').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const f=$('#sugg button'); if(f) submit(f.dataset.n); else submit($('#guess').value.trim()); }});
+$('#skip').addEventListener('click', ()=>{ if(over) return; used++; reveal(); if(used>=MAX_TRIES) return lose(); render(); });
+
+function submit(name){
+  if(over || !name) return;
+  $('#sugg').innerHTML=''; $('#guess').value='';
+  if(name.toLowerCase() === target.n.toLowerCase()) return win();
+  used++;
+  $('#guesslog').insertAdjacentHTML('beforeend', `<div class="gl">${esc(name)}</div>`);
+  reveal();
+  if(used>=MAX_TRIES) return lose();
+  render();
+}
+
+function endCard(){
+  $('#art').style.filter='none';
+  return `<div class="art-wrap" style="margin-top:10px"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='${imgURL(target,'art_crop')}'"></div>`;
+}
+function finish(html){ over=true; $('#guess').disabled=true; $('#skip').disabled=true; $('#game').hidden=true; $('#result').hidden=false; $('#result').innerHTML=html; }
+function win(){
+  finish(`<p class="eyebrow">¡La cazaste!</p><h2 class="result-title">${esc(target.n)}</h2>
+    <p style="color:var(--muted)">En ${used+1} intento${used?'s':''} · ${used} pista${used===1?'':'s'} extra</p>
+    ${endCard()}<div class="center-actions">${againBtns()}</div>`);
+}
+function lose(){
+  finish(`<p class="eyebrow" style="color:var(--bad)">Se acabaron los intentos</p><h2 class="result-title">${esc(target.n)}</h2>
+    ${endCard()}<div class="center-actions">${againBtns()}</div>`);
+}
+function againBtns(){
+  return `<button class="btn btn-primary" onclick="location.reload()">${mode==='daily'?'Ver de nuevo':'Otra carta 🔀'}</button>
+          <a class="btn" href="index.html">Otros juegos</a>`;
+}
+
+document.querySelectorAll('#modepick button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#modepick button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); mode=b.dataset.mode; if(POOL.length) start();
+});
+function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+</script>
+</body>
+</html>

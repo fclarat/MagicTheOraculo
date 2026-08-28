@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wordle MTG — Magic The Oráculo</title>
+<meta name="description" content="Adiviná el nombre de una carta de Magic, letra por letra, estilo Wordle.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%A4</text></svg>">
+<link rel="stylesheet" href="theme.css">
+<style>
+  main { text-align:center; }
+  .hint { color:var(--muted); font-size:14.5px; margin:14px auto 0; max-width:460px; }
+  .hint b { color:var(--gold); font-weight:600; }
+  .grid { display:grid; gap:6px; justify-content:center; margin:16px auto 0; }
+  .grow { display:grid; gap:6px; grid-auto-flow:column; justify-content:center; }
+  .tile { width:clamp(30px,9vw,46px); aspect-ratio:1; display:grid; place-items:center;
+    border:2px solid var(--smoke-2); border-radius:8px; font-family:'Cinzel',serif; font-weight:700;
+    font-size:clamp(16px,5vw,22px); text-transform:uppercase; background:var(--ink); transition:transform .15s; }
+  .tile.filled { border-color:var(--faint); animation:pip .12s ease; }
+  @keyframes pip { from{transform:scale(1.08);} to{transform:scale(1);} }
+  .tile.g { background:var(--good); border-color:var(--good); color:#0e1a12; }
+  .tile.y { background:var(--warn); border-color:var(--warn); color:#241a06; }
+  .tile.b { background:var(--smoke); border-color:var(--smoke); color:var(--muted); }
+  .kb { display:grid; gap:6px; max-width:500px; margin:20px auto 0; }
+  .krow { display:flex; gap:5px; justify-content:center; }
+  .key { flex:1; max-width:42px; min-width:0; padding:12px 0; border-radius:7px; border:none; cursor:pointer;
+    background:var(--smoke-2); color:var(--parchment); font-family:'Jost',sans-serif; font-weight:600; font-size:13px; }
+  .key.wide { max-width:62px; font-size:11px; }
+  .key.g { background:var(--good); color:#0e1a12; } .key.y { background:var(--warn); color:#241a06; } .key.b { background:#1b1826; color:var(--faint); }
+  .key:active { transform:translateY(1px); }
+  .msg { min-height:22px; color:var(--gold); font-family:'Jost',sans-serif; font-size:14px; margin:12px 0 0; }
+  .result-title { font-family:'Cinzel',serif; font-weight:700; font-size:clamp(22px,6vw,32px); margin:6px 0 2px; text-wrap:balance; }
+  .cardwrap { display:flex; justify-content:center; margin:14px 0; }
+  .cardwrap img { width:min(260px,70vw); border-radius:12px; box-shadow:var(--shadow); }
+  .center-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:20px; }
+  .foot { color:var(--faint); text-align:center; font-family:'Jost',sans-serif; font-size:13px; margin-top:24px; }
+  .modepick { display:inline-flex; border:1px solid var(--smoke-2); border-radius:99px; overflow:hidden; margin-top:6px; }
+  .modepick button { background:transparent; border:none; color:var(--muted); padding:7px 16px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13px; }
+  .modepick button.on { background:var(--gold); color:#241a06; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">‹ Volver al hub</a>
+  <header class="mast">
+    <div class="sigil">🔤</div>
+    <h1 class="wordmark">Wordle MTG</h1>
+    <p class="tagline">Adiviná el nombre de la carta, letra por letra</p>
+    <div class="modepick" id="modepick"><button data-mode="daily" class="on">Del día</button><button data-mode="rand">Infinito</button></div>
+  </header>
+  <main>
+    <div id="game" hidden>
+      <p class="hint" id="hint"></p>
+      <div class="grid" id="grid"></div>
+      <p class="msg" id="msg"></p>
+      <div class="kb" id="kb"></div>
+    </div>
+    <div id="result" hidden></div>
+    <p class="foot" id="loading">Cargando el grimorio…</p>
+  </main>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let POOL=[], WORDS=[], target=null, L=0, row=0, col=0, grid=[], over=false, mode='daily';
+const ROWS=6;
+const keyState={};
+
+fetch('data/games.json').then(r=>r.json()).then(d=>{
+  POOL=d.cards;
+  WORDS = POOL.filter(c=>/^[A-Za-z]{4,9}$/.test(c.n)).slice(0,260);   // popular single-word names
+  $('#loading').hidden=true; $('#game').hidden=false; start();
+}).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
+
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+function imgURL(c,k){ return `https://cards.scryfall.io/${k}/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`; }
+const COLNAME={W:'blanca',U:'azul',B:'negra',R:'roja',G:'verde'};
+function colorWord(c){ if(!c.co) return 'incolora'; if(c.co.length>=2) return 'multicolor'; return COLNAME[c.co]; }
+function typeWord(c){ return c.t.split('—')[0].trim().toLowerCase(); }
+
+function start(){
+  over=false; row=0; col=0; for(const k in keyState) delete keyState[k];
+  target = mode==='daily' ? WORDS[hashStr('wordle'+todayKey())%WORDS.length] : WORDS[Math.floor(Math.random()*WORDS.length)];
+  L = target.n.length;
+  grid = Array.from({length:ROWS},()=>Array(L).fill(''));
+  $('#result').hidden=true; $('#game').hidden=false; $('#msg').textContent='';
+  $('#hint').innerHTML = `Carta de Magic · <b>${colorWord(target)}</b> · <b>${esc(typeWord(target))}</b> · coste <b>${target.cmc}</b> · <b>${L}</b> letras`;
+  renderGrid(); renderKB();
+}
+function renderGrid(){
+  const g=$('#grid'); g.innerHTML='';
+  for(let r=0;r<ROWS;r++){ const rowEl=document.createElement('div'); rowEl.className='grow';
+    for(let c=0;c<L;c++){ const t=document.createElement('div'); t.className='tile'; t.id=`t-${r}-${c}`;
+      t.textContent=grid[r][c]; if(grid[r][c]) t.classList.add('filled'); rowEl.appendChild(t); }
+    g.appendChild(rowEl); }
+}
+const KROWS=['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+function renderKB(){
+  const kb=$('#kb'); kb.innerHTML='';
+  KROWS.forEach((rw,i)=>{ const r=document.createElement('div'); r.className='krow';
+    if(i===2){ r.appendChild(mkKey('↵','Enter','wide')); }
+    for(const ch of rw){ r.appendChild(mkKey(ch,ch)); }
+    if(i===2){ r.appendChild(mkKey('⌫','Backspace','wide')); }
+    kb.appendChild(r); });
+}
+function mkKey(label,key,cls){ const b=document.createElement('button'); b.className='key'+(cls?' '+cls:'')+(keyState[key]?' '+keyState[key]:'');
+  b.textContent=label; b.onclick=()=>press(key); return b; }
+
+function press(k){
+  if(over) return;
+  if(k==='Enter') return submit();
+  if(k==='Backspace'){ if(col>0){ col--; grid[row][col]=''; paint(row); } return; }
+  if(/^[A-Za-z]$/.test(k) && col<L){ grid[row][col]=k.toUpperCase(); col++; paint(row); }
+}
+function paint(r){ for(let c=0;c<L;c++){ const t=$(`#t-${r}-${c}`); t.textContent=grid[r][c]; t.classList.toggle('filled',!!grid[r][c]); } }
+
+function submit(){
+  if(col<L){ flash('Faltan letras'); return; }
+  const guess=grid[row].join(''); const ans=target.n.toUpperCase();
+  // two-pass scoring for duplicate letters
+  const res=Array(L).fill('b'); const cnt={};
+  for(const ch of ans) cnt[ch]=(cnt[ch]||0)+1;
+  for(let c=0;c<L;c++){ if(guess[c]===ans[c]){ res[c]='g'; cnt[guess[c]]--; } }
+  for(let c=0;c<L;c++){ if(res[c]==='g') continue; const ch=guess[c]; if(cnt[ch]>0){ res[c]='y'; cnt[ch]--; } }
+  for(let c=0;c<L;c++){ const t=$(`#t-${row}-${c}`); t.classList.add(res[c]);
+    const kprev=keyState[guess[c]]; const rank={b:0,y:1,g:2}; if(!kprev||rank[res[c]]>rank[kprev]) keyState[guess[c]]=res[c]; }
+  renderKB();
+  if(guess===ans) return end(true);
+  row++; col=0;
+  if(row>=ROWS) return end(false);
+}
+function flash(m){ $('#msg').textContent=m; setTimeout(()=>{ if($('#msg').textContent===m) $('#msg').textContent=''; },1400); }
+
+function end(won){
+  over=true;
+  setTimeout(()=>{
+    $('#game').hidden=true; $('#result').hidden=false;
+    $('#result').innerHTML =
+      `<p class="eyebrow" ${won?'':'style="color:var(--bad)"'}>${won?'¡Bien ahí!':'Era…'}</p>
+       <h2 class="result-title">${esc(target.n)}</h2>
+       <div class="cardwrap"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" onerror="this.src='${imgURL(target,'art_crop')}'"></div>
+       <p style="color:var(--muted)">${won?`Resuelta en ${row+1} intento${row?'s':''}`:''}</p>
+       <div class="center-actions">
+         <button class="btn btn-primary" onclick="location.reload()">${mode==='daily'?'Ver de nuevo':'Otra carta 🔀'}</button>
+         <a class="btn" href="index.html">Otros juegos</a>
+       </div>`;
+  }, 450);
+}
+
+addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key==='Backspace'||/^[a-zA-Z]$/.test(e.key)) press(e.key); });
+document.querySelectorAll('#modepick button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#modepick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); mode=b.dataset.mode; if(POOL.length) start();
+});
+function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+</script>
+</body>
+</html>

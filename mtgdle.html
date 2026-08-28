@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MTG-dle — Magic The Oráculo</title>
+<meta name="description" content="Adiviná la carta de Magic del día por sus atributos: color, coste, tipo, rareza, subtipo.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A7%A9</text></svg>">
+<link rel="stylesheet" href="theme.css">
+<style>
+  main { text-align:center; }
+  .guessrow { position:relative; max-width:440px; margin:16px auto 0; }
+  #guess { width:100%; box-sizing:border-box; background:var(--ink-2); color:var(--parchment);
+    border:1px solid var(--smoke-2); border-radius:12px; padding:13px 15px; font-family:'Spectral',serif; font-size:16px; text-align:center; }
+  #guess:focus { outline:2px solid var(--gold); outline-offset:1px; }
+  .sugg { position:absolute; left:0; right:0; top:52px; z-index:5; display:grid; gap:3px; background:var(--void); border-radius:10px; }
+  .sugg button { text-align:left; background:var(--ink); color:var(--parchment); border:1px solid var(--smoke);
+    border-radius:8px; padding:9px 12px; cursor:pointer; font-family:'Spectral',serif; font-size:14px; }
+  .sugg button:hover { border-color:var(--gold); }
+  .board { max-width:560px; margin:18px auto 0; overflow-x:auto; }
+  table { border-collapse:separate; border-spacing:5px; margin:0 auto; }
+  th { font-family:'Jost',sans-serif; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:600; padding-bottom:2px; }
+  td { width:64px; height:60px; border-radius:9px; background:var(--ink); border:1px solid var(--smoke);
+    font-family:'Jost',sans-serif; font-size:12px; line-height:1.2; vertical-align:middle; padding:3px;
+    animation:flip .4s ease both; }
+  @keyframes flip { from{transform:rotateX(90deg); opacity:0;} to{transform:none; opacity:1;} }
+  td.name { width:118px; font-family:'Spectral',serif; font-size:12.5px; background:var(--ink-2); color:var(--parchment); }
+  td.g { background:var(--good); color:#0e1a12; border-color:var(--good); }
+  td.y { background:var(--warn); color:#241a06; border-color:var(--warn); }
+  td.b { background:#241f2e; color:var(--muted); border-color:var(--smoke); }
+  .arrow { font-size:17px; display:block; line-height:1; }
+  .msg { min-height:20px; color:var(--muted); font-size:13.5px; margin:12px 0 0; font-family:'Jost',sans-serif; }
+  .result-title { font-family:'Cinzel',serif; font-weight:700; font-size:clamp(22px,6vw,32px); margin:8px 0 2px; text-wrap:balance; }
+  .cardwrap { display:flex; justify-content:center; margin:14px 0; }
+  .cardwrap img { width:min(260px,70vw); border-radius:12px; box-shadow:var(--shadow); }
+  .center-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+  .foot { color:var(--faint); text-align:center; font-family:'Jost',sans-serif; font-size:13px; margin-top:24px; }
+  .modepick { display:inline-flex; border:1px solid var(--smoke-2); border-radius:99px; overflow:hidden; margin-top:6px; }
+  .modepick button { background:transparent; border:none; color:var(--muted); padding:7px 16px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13px; }
+  .modepick button.on { background:var(--gold); color:#241a06; font-weight:600; }
+  .legend { color:var(--faint); font-size:12px; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">‹ Volver al hub</a>
+  <header class="mast">
+    <div class="sigil">🧩</div>
+    <h1 class="wordmark">MTG-dle</h1>
+    <p class="tagline">Adiviná la carta por sus atributos</p>
+    <div class="modepick" id="modepick"><button data-mode="daily" class="on">Del día</button><button data-mode="rand">Infinito</button></div>
+  </header>
+  <main>
+    <div id="game" hidden>
+      <div class="guessrow">
+        <input id="guess" type="text" autocomplete="off" spellcheck="false" placeholder="Adiviná una carta…">
+        <div class="sugg" id="sugg"></div>
+      </div>
+      <p class="msg" id="msg">Verde = coincide · Amarillo = parcial · ↑/↓ = el coste real es mayor/menor</p>
+      <div class="board" id="board"></div>
+    </div>
+    <div id="result" hidden></div>
+    <p class="foot" id="loading">Cargando el grimorio…</p>
+  </main>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let POOL=[], NAMES=[], GUESSABLE=[], TARGETS=[], target=null, tries=0, over=false, mode='daily', rows=[];
+
+fetch('data/games.json').then(r=>r.json()).then(d=>{
+  POOL=d.cards; NAMES=POOL.map(c=>c.n);
+  GUESSABLE=POOL.slice(0,4000); TARGETS=POOL.slice(0,1200);
+  $('#loading').hidden=true; $('#game').hidden=false; start();
+}).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
+
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+function imgURL(c,k){ return `https://cards.scryfall.io/${k}/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`; }
+
+const CORE=['Creature','Planeswalker','Land','Instant','Sorcery','Artifact','Enchantment','Battle'];
+function coreType(c){ for(const x of CORE) if(c.t.includes(x)) return x; return '—'; }
+const CORE_ES={Creature:'Criatura',Planeswalker:'Planeswalker',Land:'Tierra',Instant:'Instant.',Sorcery:'Conjuro',Artifact:'Artefacto',Enchantment:'Encant.',Battle:'Batalla','—':'—'};
+const COLNAME={W:'Blanca',U:'Azul',B:'Negra',R:'Roja',G:'Verde'};
+function colorLabel(c){ if(!c.co) return 'Incolora'; if(c.co.length>=2) return 'Multi ('+c.co.split('').length+')'; return COLNAME[c.co]; }
+const RARNAME={c:'Común',u:'Infrec.',r:'Rara',m:'Mítica'}, RARRANK={c:0,u:1,r:2,m:3};
+function subSet(c){ return new Set((c.st||'').split(/\s+/).filter(Boolean)); }
+
+function cmp(g){
+  // returns array of {cls, html} for columns: color, cmc, type, rarity, subtype
+  const out=[];
+  // color
+  const gc=new Set(g.co), tc=new Set(target.co);
+  let ccls='b'; if(g.co===target.co) ccls='g'; else if([...gc].some(x=>tc.has(x))||(!g.co&&!target.co)) ccls=(g.co&&target.co)?'y':'b';
+  out.push({cls:ccls, html:colorLabel(g)});
+  // cmc
+  let mcls = g.cmc===target.cmc?'g':(Math.abs(g.cmc-target.cmc)<=1?'y':'b');
+  const arr = g.cmc===target.cmc?'':(g.cmc<target.cmc?'<span class="arrow">↑</span>':'<span class="arrow">↓</span>');
+  out.push({cls:mcls, html:`${g.cmc}${arr}`});
+  // type
+  out.push({cls: coreType(g)===coreType(target)?'g':'b', html:CORE_ES[coreType(g)]});
+  // rarity
+  let rcls=g.r===target.r?'g':'b';
+  const rarr = g.r===target.r?'':(RARRANK[g.r]<RARRANK[target.r]?'<span class="arrow">↑</span>':'<span class="arrow">↓</span>');
+  out.push({cls:rcls, html:`${RARNAME[g.r]||'—'}${rarr}`});
+  // subtype
+  const gs=subSet(g), ts=subSet(target); const inter=[...gs].filter(x=>ts.has(x));
+  let scls='b'; if(gs.size&&ts.size&&inter.length===gs.size&&inter.length===ts.size) scls='g'; else if(inter.length) scls='y';
+  out.push({cls:scls, html: (g.st||'—').slice(0,16)});
+  return out;
+}
+
+function start(){
+  over=false; tries=0; rows=[];
+  target = mode==='daily' ? TARGETS[hashStr('mtgdle'+todayKey())%TARGETS.length] : TARGETS[Math.floor(Math.random()*TARGETS.length)];
+  $('#result').hidden=true; $('#game').hidden=false; $('#guess').value=''; $('#guess').disabled=false; $('#sugg').innerHTML='';
+  renderBoard(); $('#guess').focus();
+}
+function renderBoard(){
+  const b=$('#board');
+  if(!rows.length){ b.innerHTML=''; return; }
+  let html='<table><thead><tr><th>Carta</th><th>Color</th><th>Coste</th><th>Tipo</th><th>Rareza</th><th>Subtipo</th></tr></thead><tbody>';
+  for(const r of rows){
+    html+=`<tr><td class="name">${esc(r.g.n)}</td>`+
+      r.cells.map(c=>`<td class="${c.cls}">${c.html}</td>`).join('')+'</tr>';
+  }
+  html+='</tbody></table>';
+  b.innerHTML=html;
+}
+function guessCard(name){
+  if(over) return;
+  const g=POOL.find(c=>c.n.toLowerCase()===name.toLowerCase()); if(!g) return;
+  $('#guess').value=''; $('#sugg').innerHTML='';
+  tries++;
+  rows.unshift({ g, cells: cmp(g) });
+  renderBoard();
+  if(g.n===target.n) return win();
+}
+function win(){
+  over=true; $('#guess').disabled=true;
+  setTimeout(()=>{ $('#game').hidden=true; $('#result').hidden=false;
+    $('#result').innerHTML=`<p class="eyebrow">¡La sacaste!</p><h2 class="result-title">${esc(target.n)}</h2>
+      <p style="color:var(--muted)">En ${tries} intento${tries===1?'':'s'}</p>
+      <div class="cardwrap"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" onerror="this.src='${imgURL(target,'art_crop')}'"></div>
+      <div class="center-actions"><button class="btn btn-primary" onclick="location.reload()">${mode==='daily'?'Ver de nuevo':'Otra carta 🔀'}</button>
+      <a class="btn" href="index.html">Otros juegos</a></div>`; }, 300);
+}
+
+$('#guess').addEventListener('input', e=>{
+  const q=e.target.value.trim().toLowerCase(), box=$('#sugg');
+  if(q.length<2){ box.innerHTML=''; return; }
+  const hits=[]; for(let i=0;i<GUESSABLE.length && hits.length<7;i++) if(GUESSABLE[i].n.toLowerCase().includes(q)) hits.push(GUESSABLE[i].n);
+  box.innerHTML=hits.map(n=>`<button data-n="${esc(n)}">${esc(n)}</button>`).join('');
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>guessCard(b.dataset.n));
+});
+$('#guess').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const f=$('#sugg button'); if(f) guessCard(f.dataset.n); }});
+document.querySelectorAll('#modepick button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#modepick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); mode=b.dataset.mode; if(POOL.length) start();
+});
+function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+</script>
+</body>
+</html>
