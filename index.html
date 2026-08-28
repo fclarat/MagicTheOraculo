@@ -328,6 +328,34 @@
   .recap-row .ra.yes { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
   .recap-row .ra.no  { background: color-mix(in srgb, var(--bad) 20%, transparent);  color: var(--bad); }
   .recap-row .ra.grp { background: color-mix(in srgb, var(--gold) 20%, transparent); color: var(--gold); }
+
+  /* ---- miss capture + per-device memory ---- */
+  .miss-box { max-width: 420px; margin: 22px auto 0; text-align: left; }
+  .miss-q { color: var(--muted); font-size: 14px; margin: 0 0 8px; text-align: center; }
+  #miss-input {
+    width: 100%; box-sizing: border-box; background: var(--ink-2); color: var(--parchment);
+    border: 1px solid var(--smoke-2); border-radius: 10px; padding: 11px 13px;
+    font-family: 'Spectral', serif; font-size: 15px;
+  }
+  #miss-input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .miss-sugg { display: grid; gap: 4px; margin-top: 6px; }
+  .miss-opt {
+    text-align: left; background: var(--ink); color: var(--parchment); border: 1px solid var(--smoke);
+    border-radius: 8px; padding: 9px 12px; cursor: pointer; font-family: 'Spectral', serif; font-size: 14px;
+  }
+  .miss-opt:hover { border-color: var(--gold); }
+  .miss-ok { color: var(--good); text-align: center; margin: 12px 0 0; font-style: italic; }
+  .mem { max-width: 420px; margin: 14px auto 0; }
+  .mem > summary {
+    cursor: pointer; list-style: none; color: var(--faint); font-family: 'Jost', sans-serif;
+    font-size: 12px; letter-spacing: .04em; text-align: center;
+  }
+  .mem > summary::-webkit-details-marker { display: none; }
+  .mem-note { color: var(--faint); font-size: 12px; margin: 8px 0; }
+  #mem-json {
+    width: 100%; box-sizing: border-box; height: 88px; background: var(--ink-2); color: var(--muted);
+    border: 1px solid var(--smoke); border-radius: 8px; font-family: monospace; font-size: 11px; padding: 8px;
+  }
   .recap-row .rq { color: var(--muted); }
   .recap-row .rp {
     font-family: 'Jost', sans-serif; font-variant-numeric: tabular-nums;
@@ -361,6 +389,12 @@
         <button class="btn btn-primary" id="btn-start">Empezar la sesión</button>
       </div>
       <p class="foot-note" id="intro-foot">Cargando el grimorio…</p>
+      <details class="mem" id="mem-box" hidden>
+        <summary id="mem-summary"></summary>
+        <p class="mem-note">Se guarda solo en este dispositivo. Copiá esto y pasámelo para sumar tus cartas al grimorio:</p>
+        <textarea id="mem-json" readonly></textarea>
+        <button class="link" id="mem-clear">Borrar mi memoria</button>
+      </details>
     </section>
 
     <!-- GAME -->
@@ -435,6 +469,12 @@
       <h2 class="result-title">Me ganaste esta vez</h2>
       <p class="result-sub">No estaba en mi grimorio, o me despistaste. Mis mejores sospechas eran:</p>
       <div class="loselist" id="lose-list"></div>
+      <div class="miss-box">
+        <p class="miss-q">¿Cuál era tu carta? La guardo y la próxima la encuentro más rápido.</p>
+        <input id="miss-input" type="text" autocomplete="off" spellcheck="false" placeholder="Escribí el nombre…">
+        <div id="miss-sugg" class="miss-sugg"></div>
+        <div id="miss-done"></div>
+      </div>
       <div class="center-actions">
         <button class="btn btn-primary" id="btn-again2">Volver a intentar</button>
       </div>
@@ -505,13 +545,25 @@ const GVAL = GROUPS.map(g => { const a = new Int8Array(NC); for (let i = 0; i < 
 const GCOVER = GROUPS.map(g => g.covers.map(id => FID[id]).filter(x => x != null));
 const GROUP_AY = 0.85;   // reliability model for a categorical answer (planning)
 
+// ---- per-device memory (localStorage). Static hosting (GitHub Pages) has no
+// shared server store, but the browser persists this locally -- so the oracle
+// remembers YOUR cards on this device. Works in the Artifact too (private to it).
+const LS_KEY = 'mto_v1';
+const NAME2IDX = {}; CARDS.forEach((c, i) => NAME2IDX[c.n.toLowerCase()] = i);
+function loadMem() { try { const m = JSON.parse(localStorage.getItem(LS_KEY)); if (m && m.seen && m.misses) return m; } catch (e) {} return { seen: {}, misses: [] }; }
+let MEM = loadMem();
+function saveMem() { try { localStorage.setItem(LS_KEY, JSON.stringify(MEM)); } catch (e) {} }
+function rememberCard(name) { MEM.seen[name] = (MEM.seen[name] || 0) + 1; saveMem(); }
+
 let logp, asked, answers, history, qcount, guessed, askedGroups;
 
 function resetState() {
   logp = new Float64Array(NC);
   let s = 0;
   for (let i = 0; i < NC; i++) {
-    const w = 1 / Math.pow((CARDS[i].rk || PRIOR_NULL) + PRIOR_BASE, PRIOR_EXP);
+    let w = 1 / Math.pow((CARDS[i].rk || PRIOR_NULL) + PRIOR_BASE, PRIOR_EXP);
+    const seen = MEM.seen[CARDS[i].n];        // cards you've thought of before rank higher
+    if (seen) w *= 1 + Math.min(seen, 6) * 0.6;
     logp[i] = w; s += w;
   }
   for (let i = 0; i < NC; i++) logp[i] = Math.log(logp[i] / s);
@@ -888,6 +940,7 @@ $('#btn-yes-final').addEventListener('click', () => {
   $('#win-card').innerHTML = cardHTML(pending.card);
   $('#win-q').textContent = qcount;
   $('#win-sub').textContent = qcount <= 8 ? '…y casi sin esfuerzo.' : 'Costó, pero caí parado.';
+  rememberCard(pending.card.n);
   renderRecap(pending.i);
   show('win');
 });
@@ -946,6 +999,7 @@ function renderList(list) {
       $('#win-card').innerHTML = cardHTML(e.card);
       $('#win-q').textContent = qcount;
       $('#win-sub').textContent = 'Estaba entre mis sospechas.';
+      rememberCard(e.card.n);
       renderRecap(e.i);
       show('win');
     }));
@@ -964,10 +1018,50 @@ function giveUp() {
   $('#lose-list').innerHTML = top.map(i => `
     <div class="li"><span class="nm">${esc(CARDS[i].n)}</span>
     <span class="mv">${esc(CARDS[i].t)}</span></div>`).join('');
+  $('#miss-input').value = ''; $('#miss-sugg').innerHTML = ''; $('#miss-done').innerHTML = '';
   show('lose');
 }
 
 function begin() { resetState(); curFeature = null; pending = null; turn(); }
+
+/* ---- miss capture + per-device memory ---------------------------------- */
+function saveMiss(i, raw) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (i >= 0) {
+    rememberCard(CARDS[i].n);
+    MEM.misses.push({ name: CARDS[i].n, inSet: true, d: today }); saveMem();
+    $('#miss-done').innerHTML =
+      `<div class="cardwrap" style="margin-top:14px">${cardHTML(CARDS[i])}</div>` +
+      `<p class="miss-ok">¡Guardada! 🔮 La próxima la encuentro más rápido.</p>`;
+  } else if (raw) {
+    MEM.misses.push({ name: raw, inSet: false, d: today }); saveMem();
+    $('#miss-done').innerHTML =
+      `<p class="miss-ok">Anotada: “${esc(raw)}”. No estaba en el grimorio — la sumo en la próxima actualización.</p>`;
+  }
+  $('#miss-input').value = ''; $('#miss-sugg').innerHTML = '';
+  renderMem();
+}
+$('#miss-input').addEventListener('input', e => {
+  const raw = e.target.value.trim(), q = raw.toLowerCase(), box = $('#miss-sugg');
+  if (q.length < 2) { box.innerHTML = ''; return; }
+  const hits = [];
+  for (let i = 0; i < NC && hits.length < 8; i++) if (CARDS[i].n.toLowerCase().includes(q)) hits.push(i);
+  box.innerHTML = hits.map(i => `<button class="miss-opt" data-i="${i}">${esc(CARDS[i].n)}</button>`).join('') +
+    `<button class="miss-opt" data-i="-1">+ Agregar “${esc(raw)}” (no está en el grimorio)</button>`;
+  box.querySelectorAll('.miss-opt').forEach(b => b.addEventListener('click', () => saveMiss(+b.dataset.i, raw)));
+});
+
+function renderMem() {
+  const learned = Object.keys(MEM.seen).length, misses = MEM.misses.length;
+  const box = $('#mem-box');
+  if (!learned && !misses) { box.hidden = true; return; }
+  box.hidden = false;
+  $('#mem-summary').textContent = `🧠 Recuerdo ${learned} carta${learned === 1 ? '' : 's'} tuya${learned === 1 ? '' : 's'}` +
+    (misses ? ` · ${misses} para sumar` : '');
+  $('#mem-json').value = JSON.stringify(MEM);
+}
+$('#mem-clear').addEventListener('click', () => { MEM = { seen: {}, misses: [] }; saveMem(); renderMem(); });
+renderMem();
 
 /* ------------------------------------------------------------------ *
  *  Card rendering (CSS "card" — no external art, CSP-safe)
