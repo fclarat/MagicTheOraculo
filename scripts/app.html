@@ -460,7 +460,7 @@
       <p class="result-sub">No estaba en mi grimorio, o me despistaste. Mis mejores sospechas eran:</p>
       <div class="loselist" id="lose-list"></div>
       <div class="miss-box">
-        <p class="miss-q">¿Cuál era tu carta? La guardo y la próxima la encuentro más rápido.</p>
+        <p class="miss-q">¿Qué carta estabas buscando? La sumo a la base para afinar el oráculo.</p>
         <input id="miss-input" type="text" autocomplete="off" spellcheck="false" placeholder="Escribí el nombre…">
         <div id="miss-sugg" class="miss-sugg"></div>
         <div id="miss-done"></div>
@@ -544,6 +544,33 @@ function loadMem() { try { const m = JSON.parse(localStorage.getItem(LS_KEY)); i
 let MEM = loadMem();
 function saveMem() { try { localStorage.setItem(LS_KEY, JSON.stringify(MEM)); } catch (e) {} }
 function rememberCard(name) { MEM.seen[name] = (MEM.seen[name] || 0) + 1; saveMem(); }
+
+// ---- shared collection: every "not found" search goes to a central database
+// so the oracle can be improved for everyone. Firestore REST (no SDK). Fill FB
+// with your Firebase web config to enable; empty = disabled (page still works,
+// local only). Safe to ship the apiKey publicly -- writes are gated by the
+// security rules, and this collection is create-only.
+const FB = { projectId: '', apiKey: '' };
+function submitSearch(name, inSet, path) {
+  if (!FB.projectId || !FB.apiKey) return;
+  const url = `https://firestore.googleapis.com/v1/projects/${FB.projectId}/databases/(default)/documents/searches?key=${FB.apiKey}`;
+  const body = { fields: {
+    name:  { stringValue: String(name).slice(0, 180) },
+    inSet: { booleanValue: !!inSet },
+    path:  { stringValue: String(path || '').slice(0, 900) },
+    ts:    { timestampValue: new Date().toISOString() },
+  } };
+  try { fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {}); } catch (e) {}
+}
+// the answers given this game, so we can see WHY a card wasn't found
+function answersSummary() {
+  const parts = [];
+  for (const h of history) {
+    if (h.group != null) { if (h.opt >= 0) parts.push(GSHORT[h.group] + '=' + GROUPS[h.group].opts[h.opt]); }
+    else if (h.k !== 'idk') parts.push(FEATS[h.j].id + '=' + h.k);
+  }
+  return parts.join(', ');
+}
 
 let logp, asked, answers, history, qcount, guessed, askedGroups;
 
@@ -1017,16 +1044,19 @@ function begin() { resetState(); curFeature = null; pending = null; turn(); }
 /* ---- miss capture + per-device memory ---------------------------------- */
 function saveMiss(i, raw) {
   const today = new Date().toISOString().slice(0, 10);
+  const path = answersSummary();
   if (i >= 0) {
     rememberCard(CARDS[i].n);
     MEM.misses.push({ name: CARDS[i].n, inSet: true, d: today }); saveMem();
+    submitSearch(CARDS[i].n, true, path);       // -> shared database
     $('#miss-done').innerHTML =
       `<div class="cardwrap" style="margin-top:14px">${cardHTML(CARDS[i])}</div>` +
-      `<p class="miss-ok">¡Guardada! 🔮 La próxima la encuentro más rápido.</p>`;
+      `<p class="miss-ok">¡Gracias! La sumé para afinar el oráculo. 🔮</p>`;
   } else if (raw) {
     MEM.misses.push({ name: raw, inSet: false, d: today }); saveMem();
+    submitSearch(raw, false, path);             // -> shared database
     $('#miss-done').innerHTML =
-      `<p class="miss-ok">Anotada: “${esc(raw)}”. No estaba en el grimorio — la sumo en la próxima actualización.</p>`;
+      `<p class="miss-ok">Anotada: “${esc(raw)}”. No estaba en el grimorio — la sumo pronto.</p>`;
   }
   $('#miss-input').value = ''; $('#miss-sugg').innerHTML = '';
   renderMem();
