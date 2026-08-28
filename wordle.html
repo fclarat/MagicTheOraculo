@@ -59,9 +59,10 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
+<script src="extras.js?v=1"></script>
 <script>
 const $ = s => document.querySelector(s);
-let POOL=[], WORDS=[], target=null, L=0, row=0, col=0, grid=[], over=false, mode='daily';
+let POOL=[], WORDS=[], target=null, L=0, row=0, col=0, grid=[], over=false, mode='daily', rowsRes=[];
 const ROWS=6;
 const keyState={};
 
@@ -74,13 +75,13 @@ fetch('data/games.json?v=3').then(r=>r.json()).then(d=>{
 
 function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
-function imgURL(c,k){ return `https://cards.scryfall.io/${k}/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`; }
+function imgURL(c,k){ const id=c.fid||c.id; return `https://cards.scryfall.io/${k}/front/${id[0]}/${id[1]}/${id}.jpg`; }
 const COLNAME={W:'blanca',U:'azul',B:'negra',R:'roja',G:'verde'};
 function colorWord(c){ if(!c.co) return 'incolora'; if(c.co.length>=2) return 'multicolor'; return COLNAME[c.co]; }
 function typeWord(c){ return c.t.split('—')[0].trim().toLowerCase(); }
 
 function start(){
-  over=false; row=0; col=0; for(const k in keyState) delete keyState[k];
+  over=false; row=0; col=0; rowsRes=[]; for(const k in keyState) delete keyState[k];
   target = mode==='daily' ? WORDS[hashStr('wordle'+todayKey())%WORDS.length] : WORDS[Math.floor(Math.random()*WORDS.length)];
   L = target.n.length;
   grid = Array.from({length:ROWS},()=>Array(L).fill(''));
@@ -126,6 +127,7 @@ function submit(){
   for(let c=0;c<L;c++){ const t=$(`#t-${row}-${c}`); t.classList.add(res[c]);
     const kprev=keyState[guess[c]]; const rank={b:0,y:1,g:2}; if(!kprev||rank[res[c]]>rank[kprev]) keyState[guess[c]]=res[c]; }
   renderKB();
+  rowsRes.push(res.slice());
   if(guess===ans) return end(true);
   row++; col=0;
   if(row>=ROWS) return end(false);
@@ -134,17 +136,12 @@ function flash(m){ $('#msg').textContent=m; setTimeout(()=>{ if($('#msg').textCo
 
 function end(won){
   over=true;
+  const gridEmo = rowsRes.map(r=>r.map(c=>c==='g'?'🟩':c==='y'?'🟨':'⬛').join('')).join('\n');
   setTimeout(()=>{
-    $('#game').hidden=true; $('#result').hidden=false;
-    $('#result').innerHTML =
-      `<p class="eyebrow" ${won?'':'style="color:var(--bad)"'}>${won?'¡Bien ahí!':'Era…'}</p>
-       <h2 class="result-title">${esc(target.n)}</h2>
-       <div class="cardwrap"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" onerror="this.src='${imgURL(target,'art_crop')}'"></div>
-       <p style="color:var(--muted)">${won?`Resuelta en ${row+1} intento${row?'s':''}`:''}</p>
-       <div class="center-actions">
-         <button class="btn btn-primary" onclick="location.reload()">${mode==='daily'?'Ver de nuevo':'Otra carta 🔀'}</button>
-         <a class="btn" href="index.html">Otros juegos</a>
-       </div>`;
+    MTO.end('wordle', { won, mode, score: won?row+1:null, distLabel:'intentos',
+      title: target.n, subtitle: won?`Resuelta en ${row+1} intento${row?'s':''}`:'No la sacaste',
+      bodyHtml: `<div class="cardwrap"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" onerror="this.onerror=null;this.src='${imgURL(target,'art_crop')}'"></div>`,
+      shareText: `Wordle MTG 🔤 ${won?row+1:'X'}/6\n${gridEmo}\nfclarat.github.io/MagicTheOraculo` });
   }, 450);
 }
 

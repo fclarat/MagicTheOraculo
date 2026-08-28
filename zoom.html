@@ -59,6 +59,7 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
+<script src="extras.js?v=1"></script>
 <script>
 const $ = s => document.querySelector(s);
 let POOL=[], NAMES=[], TARGETS=[], target=null, used=0, over=false, mode='daily';
@@ -110,12 +111,16 @@ function submit(name){
   used++; $('#guesslog').insertAdjacentHTML('beforeend', `<div class="gl">${esc(name)}</div>`);
   if(used>=MAX) return lose(); render();
 }
-function endCard(){ return `<div class="cardwrap"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" onerror="this.src='${imgURL(target,'art_crop')}'"></div>`; }
-function finish(html){ over=true; $('#art').style.transform='scale(1)'; $('#game').hidden=true; $('#result').hidden=false; $('#result').innerHTML=html; }
-function win(){ finish(`<p class="eyebrow">¡La reconociste!</p><h2 class="result-title">${esc(target.n)}</h2>
-  <p style="color:var(--muted)">En ${used+1} intento${used?'s':''}</p>${endCard()}<div class="center-actions">${btns()}</div>`); }
-function lose(){ finish(`<p class="eyebrow" style="color:var(--bad)">Era…</p><h2 class="result-title">${esc(target.n)}</h2>${endCard()}<div class="center-actions">${btns()}</div>`); }
-function btns(){ return `<button class="btn btn-primary" onclick="location.reload()">${mode==='daily'?'Ver de nuevo':'Otra 🔀'}</button><a class="btn" href="index.html">Otros juegos</a>`; }
+function endCard(){ return `<div class="cardwrap"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" onerror="this.onerror=null;this.src='${imgURL(target,'art_crop')}'"></div>`; }
+function win(){ done(true); }
+function lose(){ done(false); }
+function done(won){
+  over=true; $('#art').style.transform='scale(1)';
+  MTO.end('zoom', { won, mode, score: won?used+1:null, distLabel:'intentos para ganar',
+    title: target.n, subtitle: won?`En ${used+1} intento${used?'s':''}`:'Se acabaron los intentos',
+    bodyHtml: endCard(),
+    shareText: `Zoom 🔍 — ${target.n}\n${won?`✅ ${used+1}/${MAX}`:`❌ X/${MAX}`}\nfclarat.github.io/MagicTheOraculo` });
+}
 document.querySelectorAll('#modepick button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#modepick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); mode=b.dataset.mode; if(POOL.length) start(); });
 function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 </script>

@@ -72,6 +72,7 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
+<script src="extras.js?v=1"></script>
 <script>
 const $ = s => document.querySelector(s);
 let POOL = [], NAMES = [], TARGETS = [], target = null, revealed = 0, used = 0, over = false, mode = 'daily';
@@ -180,19 +181,15 @@ function endCard(){
   $('#art').style.filter='none';
   return `<div class="art-wrap" style="margin-top:10px"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='${imgURL(target,'art_crop')}'"></div>`;
 }
-function finish(html){ over=true; $('#guess').disabled=true; $('#skip').disabled=true; $('#game').hidden=true; $('#result').hidden=false; $('#result').innerHTML=html; }
-function win(){
-  finish(`<p class="eyebrow">¡La cazaste!</p><h2 class="result-title">${esc(target.n)}</h2>
-    <p style="color:var(--muted)">En ${used+1} intento${used?'s':''} · ${used} pista${used===1?'':'s'} extra</p>
-    ${endCard()}<div class="center-actions">${againBtns()}</div>`);
-}
-function lose(){
-  finish(`<p class="eyebrow" style="color:var(--bad)">Se acabaron los intentos</p><h2 class="result-title">${esc(target.n)}</h2>
-    ${endCard()}<div class="center-actions">${againBtns()}</div>`);
-}
-function againBtns(){
-  return `<button class="btn btn-primary" onclick="location.reload()">${mode==='daily'?'Ver de nuevo':'Otra carta 🔀'}</button>
-          <a class="btn" href="index.html">Otros juegos</a>`;
+function win(){ done(true); }
+function lose(){ done(false); }
+function done(won){
+  over=true; $('#guess').disabled=true; $('#skip').disabled=true; $('#art').style.filter='none';
+  MTO.end('cardle', { won, mode, score: won?used+1:null, distLabel:'intentos para ganar',
+    title: target.n,
+    subtitle: won?`En ${used+1} intento${used?'s':''} · ${used} pista${used===1?'':'s'} extra`:'Se acabaron los intentos',
+    bodyHtml: `<div class="cardwrap"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" onerror="this.onerror=null;this.src='${imgURL(target,'art_crop')}'"></div>`,
+    shareText: `Cardle 🎴 — ${target.n}\n${won?`✅ ${used+1}/${MAX_TRIES}`:`❌ X/${MAX_TRIES}`}\nfclarat.github.io/MagicTheOraculo` });
 }
 
 document.querySelectorAll('#modepick button').forEach(b=>b.onclick=()=>{

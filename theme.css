@@ -62,4 +62,35 @@ body {
   font-family:'Jost',sans-serif; font-weight:600; font-size:12px; color:#fff;
   box-shadow:inset 0 -2px 3px rgba(0,0,0,.35), 0 1px 1px rgba(0,0,0,.3); }
 
+/* ---- celebration modal + stats (shared via extras.js) ---- */
+.mto-modal { position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
+  background:rgba(6,5,12,.72); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); padding:18px; }
+.mto-modal.show { display:flex; animation:mtoFade .25s ease; }
+@keyframes mtoFade { from{opacity:0} to{opacity:1} }
+.mto-panel { position:relative; width:100%; max-width:420px; max-height:92vh; overflow-y:auto;
+  background:linear-gradient(180deg,var(--ink-2),var(--ink)); border:1px solid var(--smoke-2);
+  border-radius:18px; padding:28px 22px 20px; text-align:center; box-shadow:var(--shadow);
+  animation:mtoPop .3s cubic-bezier(.2,.8,.2,1); }
+@keyframes mtoPop { from{opacity:0; transform:translateY(16px) scale(.96)} to{opacity:1; transform:none} }
+.mto-x { position:absolute; top:8px; right:12px; background:none; border:none; color:var(--faint); font-size:18px; cursor:pointer; }
+.mto-x:hover { color:var(--parchment); }
+.mto-eyebrow { font-family:'Jost',sans-serif; text-transform:uppercase; letter-spacing:.16em; font-size:12px; font-weight:600; }
+.mto-title { font-family:'Cinzel',serif; font-weight:700; font-size:clamp(22px,6vw,30px); margin:4px 0 2px; text-wrap:balance; }
+.mto-sub { color:var(--muted); font-style:italic; margin:0 0 6px; }
+.mto-panel .cardwrap { display:flex; justify-content:center; margin:12px 0; }
+.mto-panel .cardwrap img { width:min(210px,60vw); border-radius:12px; box-shadow:var(--shadow); }
+.mto-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:16px 0 4px; }
+.mto-stats > div { background:var(--ink); border:1px solid var(--smoke); border-radius:10px; padding:9px 4px; }
+.mto-stats b { display:block; font-family:'Jost',sans-serif; font-size:20px; color:var(--gold); font-variant-numeric:tabular-nums; }
+.mto-stats span { font-family:'Jost',sans-serif; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); }
+.mto-dist { display:grid; gap:4px; margin:10px 2px 0; }
+.mto-bar { display:grid; grid-template-columns:16px 1fr; gap:8px; align-items:center; }
+.mto-bar .bk { font-family:'Jost',sans-serif; font-size:12px; color:var(--muted); text-align:center; }
+.mto-bar i { display:block; background:linear-gradient(90deg,var(--gold-dim),var(--gold)); color:#241a06;
+  font-family:'Jost',sans-serif; font-weight:600; font-size:11px; text-align:right; padding:2px 6px; border-radius:5px; min-width:20px; }
+.mto-distlab { font-family:'Jost',sans-serif; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin-top:6px; }
+.mto-actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+.mto-copied { color:var(--good); font-family:'Jost',sans-serif; font-size:13px; margin-top:10px; }
+.mto-confetti { position:fixed; inset:0; z-index:300; pointer-events:none; }
+
 @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }

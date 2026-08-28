@@ -66,9 +66,10 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
+<script src="extras.js?v=1"></script>
 <script>
 const $ = s => document.querySelector(s);
-let POOL=[], FAM=[], mode='daily', groups=[], cats=[], tiles=[], sel=[], solved=[], mistakes=0, over=false, locked=false;
+let POOL=[], FAM=[], mode='daily', groups=[], cats=[], tiles=[], sel=[], solved=[], mistakes=0, over=false, locked=false, guessLog=[];
 const MAX_MISTAKES=4;
 const GROUP_COLORS = ['#e3b45a', '#57b368', '#4a9fd6', '#b98bd0'];
 
@@ -133,7 +134,7 @@ function assign(chosen,rng){
 function imgURL(c,k){ const id=c.fid||c.id; return `https://cards.scryfall.io/${k}/front/${id[0]}/${id[1]}/${id}.jpg`; }
 
 function start(){
-  over=false; sel=[]; solved=[]; mistakes=0;
+  over=false; sel=[]; solved=[]; mistakes=0; guessLog=[];
   let seed = mode==='daily' ? hashStr('conn'+todayKey()) : Math.floor(Math.random()*1e9);
   let pz=null, tries=0;
   do { pz=makePuzzle(seed+tries*7919); tries++; } while(!pz && tries<20);
@@ -161,6 +162,7 @@ function submit(){
   if(over||locked) return;
   if(sel.length!==4){ flash('Elegí 4 cartas'); return; }
   const gis=sel.map(i=>tiles[i].g); const counts={}; gis.forEach(g=>counts[g]=(counts[g]||0)+1);
+  guessLog.push(gis.slice());
   const max=Math.max(...Object.values(counts));
   if(max===4){
     const gi=gis[0]; solved.push(gi);
@@ -182,17 +184,19 @@ function submit(){
 }
 function flash(m){ $('#msg').textContent=m; setTimeout(()=>{ if($('#msg').textContent===m) $('#msg').textContent=''; },1300); }
 
-function endScreen(title,ecol){
-  over=true; $('#game').hidden=true; $('#result').hidden=false;
-  // reveal all groups
+function endScreen(won){
+  over=true;
   const all=[0,1,2,3].map(gi=>`<div class="grp" style="background:${GROUP_COLORS[gi]}">
     <div class="gl">${esc(cats[gi].label)}</div><div class="gc">${groups[gi].map(c=>esc(c.n)).join(' · ')}</div></div>`).join('');
-  $('#result').innerHTML=`<h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:clamp(22px,6vw,30px);color:${ecol}">${title}</h2>
-    <div class="solved" style="margin-top:14px">${all}</div>
-    <div class="controls"><button class="btn btn-primary" onclick="location.reload()">${mode==='daily'?'Ver de nuevo':'Otro 🔀'}</button><a class="btn" href="index.html">Otros juegos</a></div>`;
+  const EMO=['🟨','🟩','🟦','🟪'];
+  const grid=guessLog.map(row=>row.map(gi=>EMO[gi]).join('')).join('\n');
+  MTO.end('connections', { won, mode, score: won?mistakes:null, distLabel:'errores',
+    title: won?(mistakes===0?'¡Perfecto! 🧠':'¡Lo resolviste!'):'Se acabaron los intentos',
+    bodyHtml:`<div class="solved" style="margin-top:8px">${all}</div>`,
+    shareText:`Connections MTG 🔗\n${grid}\n${won?`✅ ${mistakes} error${mistakes===1?'':'es'}`:'❌'}\nfclarat.github.io/MagicTheOraculo` });
 }
-function win(){ endScreen(mistakes===0?'¡Perfecto! 🧠':'¡Lo resolviste!','var(--good)'); }
-function lose(){ endScreen('Se acabaron los intentos','var(--bad)'); }
+function win(){ endScreen(true); }
+function lose(){ endScreen(false); }
 
 document.querySelectorAll('#modepick button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#modepick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); mode=b.dataset.mode; if(POOL.length) start(); });
 function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }

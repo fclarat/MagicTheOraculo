@@ -52,6 +52,7 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
+<script src="extras.js?v=1"></script>
 <script>
 const $ = s => document.querySelector(s);
 let CARDS=[], order=[], mode='daily', tries=0, over=false, revealed=false, drag=null;
@@ -123,13 +124,13 @@ function check(){
   setTimeout(()=>{ $('#row').querySelectorAll('.tl').forEach(el=>el.classList.remove('ok','no')); }, 1200);
 }
 function win(){
-  over=true;
-  setTimeout(()=>{ $('#game').hidden=true; $('#result').hidden=false;
-    const line = order.map(c=>`<b style="color:var(--gold)">${c.yr}</b> ${esc(c.n)}`).join(' · ');
-    $('#result').innerHTML=`<h2 class="result-title" style="color:var(--good)">¡Bien ordenadas! 🗓️</h2>
-      <p style="color:var(--muted)">En ${tries} intento${tries===1?'':'s'}</p>
-      <p style="max-width:520px;margin:12px auto;line-height:1.9">${line}</p>
-      <div class="controls"><button class="btn btn-primary" onclick="location.reload()">${mode==='daily'?'Ver de nuevo':'Otras 🔀'}</button><a class="btn" href="index.html">Otros juegos</a></div>`;
+  over=true; revealed=true;
+  const line = order.map(c=>`<b style="color:var(--gold)">${c.yr}</b> ${esc(c.n)}`).join(' · ');
+  setTimeout(()=>{
+    MTO.end('timeline', { won:true, mode, score:tries, distLabel:'intentos',
+      title:'¡Bien ordenadas! 🗓️', subtitle:`En ${tries} intento${tries===1?'':'s'}`,
+      bodyHtml:`<p style="max-width:360px;margin:8px auto 0;line-height:1.9;font-size:14px">${line}</p>`,
+      shareText:`Timeline 🗓️\n${order.map(c=>c.yr).join(' → ')}\n✅ en ${tries} intento${tries===1?'':'s'}\nfclarat.github.io/MagicTheOraculo` });
   }, 700);
 }
 document.querySelectorAll('#modepick button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#modepick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); mode=b.dataset.mode; if(CARDS.length) start(); });

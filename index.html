@@ -4,83 +4,177 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Magic The Oráculo — Juegos</title>
-<meta name="description" content="Juegos de Magic: The Gathering — adiviná cartas por preguntas, por revelado, letra por letra o por atributos.">
+<meta name="description" content="7 juegos de Magic: The Gathering — adiviná cartas por preguntas, por su arte, por atributos, por año o agrupándolas.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%AE</text></svg>">
 <link rel="stylesheet" href="theme.css">
 <style>
-  main { margin-top:10px; }
-  .lede { text-align:center; color:var(--muted); max-width:44ch; margin:8px auto 22px; font-size:16.5px; }
-  .games { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
-  .card {
-    display:flex; flex-direction:column; gap:6px; text-decoration:none; color:inherit;
-    background:linear-gradient(180deg,var(--ink-2),var(--ink)); border:1px solid var(--smoke-2);
-    border-radius:16px; padding:20px 18px; transition:transform .14s ease, border-color .2s, box-shadow .2s;
-  }
-  .card:hover { transform:translateY(-3px); border-color:var(--gold-dim); box-shadow:0 16px 40px -22px rgba(0,0,0,.8); }
-  .card:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
-  .ci { font-size:34px; line-height:1; }
-  .ct { font-family:'Cinzel',serif; font-weight:600; font-size:19px; letter-spacing:.02em; }
-  .cd { color:var(--muted); font-size:14px; line-height:1.45; }
-  .cgo { margin-top:auto; padding-top:8px; color:var(--gold); font-family:'Jost',sans-serif; font-size:13px; letter-spacing:.04em; }
-  .foot { text-align:center; color:var(--faint); font-family:'Jost',sans-serif; font-size:12.5px; margin-top:32px; }
-  .foot a { color:var(--faint); }
+  body { overflow:hidden; }
+  .hub { height:100svh; overflow-y:scroll; scroll-snap-type:y mandatory; scroll-behavior:smooth; }
+  .topbar { position:fixed; top:0; left:0; right:0; z-index:20; display:flex; align-items:center; gap:8px;
+    padding:12px 16px; background:linear-gradient(180deg,rgba(10,9,16,.9),rgba(10,9,16,0)); pointer-events:none; }
+  .topbar .tw { font-family:'Cinzel',serif; font-weight:700; letter-spacing:.08em; font-size:15px;
+    background:linear-gradient(180deg,#f6e7bf,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent; }
+  .dots { position:fixed; right:12px; top:50%; transform:translateY(-50%); z-index:20; display:flex; flex-direction:column; gap:9px; }
+  .dots a { width:9px; height:9px; border-radius:50%; background:var(--smoke-2); transition:background .2s, transform .2s; }
+  .dots a.on { background:var(--gold); transform:scale(1.3); }
+
+  .panel { min-height:100svh; scroll-snap-align:start; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:16px; padding:64px 20px 40px; position:relative; text-align:center; }
+  .panel::before { content:""; position:absolute; inset:0; z-index:-1; opacity:.5;
+    background:radial-gradient(680px 420px at 50% 32%, var(--acc), transparent 68%); }
+  .pt { font-family:'Cinzel',serif; font-weight:700; letter-spacing:.04em; font-size:clamp(30px,9vw,46px);
+    margin:2px 0 0; text-wrap:balance;
+    background:linear-gradient(180deg,#f6e7bf,var(--gold) 75%,var(--gold-dim));-webkit-background-clip:text;background-clip:text;color:transparent; }
+  .pd { color:var(--muted); max-width:30ch; font-size:16px; margin:0; }
+  .play { text-decoration:none; }
+  .play.btn.btn-primary { padding:14px 34px; font-size:16px; border-radius:99px; }
+  .hint { position:absolute; bottom:16px; left:0; right:0; color:var(--faint); font-family:'Jost',sans-serif;
+    font-size:12px; letter-spacing:.1em; animation:bob 1.8s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+
+  /* ---- preview mock frame ---- */
+  .pv { width:min(300px,72vw); border-radius:16px; padding:16px; background:linear-gradient(180deg,var(--ink-2),var(--ink));
+    border:1px solid var(--smoke-2); box-shadow:var(--shadow); }
+  /* Oráculo */
+  .m-orb { width:66px; height:66px; border-radius:50%; margin:2px auto 12px;
+    background:radial-gradient(circle at 38% 32%,#efe4c8,#b9a7d8 42%,#4a3d6e 74%,#241d3a);
+    box-shadow:0 0 34px -6px #9b78dc; }
+  .m-q { font-family:'Cinzel',serif; font-size:17px; margin-bottom:12px; }
+  .m-pills { display:flex; gap:6px; justify-content:center; }
+  .m-pills span { flex:1; padding:9px 0; border-radius:10px; font-family:'Jost',sans-serif; font-size:12px;
+    background:linear-gradient(180deg,var(--ink-2),var(--ink)); border:1px solid var(--smoke-2); }
+  .m-pills .yes{ border-left:3px solid var(--good) } .m-pills .no{ border-left:3px solid var(--bad) }
+  .m-pills .idk{ border-style:dashed; color:var(--muted) }
+  /* Cardle / Zoom art */
+  .m-art { height:120px; border-radius:8px; background:
+    radial-gradient(120px 70px at 35% 25%,rgba(255,255,255,.22),transparent 60%),
+    linear-gradient(150deg,#3a2f5c,#7a4a5e 55%,#2a2140); }
+  .m-art.blur { filter:blur(7px); }
+  .m-art.zoom { height:150px; background-size:280% 280%; background-position:38% 40%; }
+  .m-chips { display:flex; gap:5px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+  .m-chips span { font-family:'Jost',sans-serif; font-size:11px; padding:5px 9px; border-radius:8px; background:var(--ink); border:1px solid var(--smoke); color:var(--muted); }
+  .m-name { font-family:'Cinzel',serif; letter-spacing:.3em; color:var(--faint); margin-top:10px; }
+  /* Wordle grid */
+  .m-wg { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; }
+  .m-wg i { aspect-ratio:1; border-radius:5px; border:2px solid var(--smoke-2); }
+  .m-wg i.g{ background:var(--good); border-color:var(--good) } .m-wg i.y{ background:var(--warn); border-color:var(--warn) } .m-wg i.b{ background:var(--smoke) }
+  /* MTG-dle row */
+  .m-cells { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; }
+  .m-cells i { aspect-ratio:1; border-radius:7px; display:grid; place-items:center; font-family:'Jost',sans-serif; font-weight:700; font-size:13px; color:#241a06; }
+  .m-cells i.g{ background:var(--good) } .m-cells i.y{ background:var(--warn) } .m-cells i.b{ background:#241f2e; color:var(--muted) }
+  .m-cells + .m-cells{ margin-top:5px }
+  /* Connections */
+  .m-conn { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
+  .m-conn i { aspect-ratio:1; border-radius:7px; }
+  /* Timeline */
+  .m-tl { display:flex; gap:6px; justify-content:center; }
+  .m-tl div { flex:1; border-radius:8px; overflow:hidden; border:1px solid var(--smoke-2); background:var(--ink); }
+  .m-tl div .a { height:34px; background:linear-gradient(150deg,#3a2f5c,#6a4a7e) }
+  .m-tl div .y { font-family:'Jost',sans-serif; font-weight:700; font-size:11px; color:var(--gold); padding:4px 0 }
+  .m-axis { margin-top:8px; color:var(--faint); font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.08em; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="mast">
-    <div class="sigil">🔮</div>
-    <h1 class="wordmark">Magic The Oráculo</h1>
-    <p class="tagline">Cuatro formas de adivinar cartas de Magic</p>
-  </header>
-  <main>
-    <p class="lede">Elegí tu juego. Todos usan las ~32.000 cartas reales de Scryfall.</p>
-    <div class="games">
-      <a class="card" href="oraculo.html">
-        <span class="ci">🔮</span>
-        <span class="ct">El Oráculo</span>
-        <span class="cd">Pensá una carta y te la adivino con preguntas (Sí / No / opción múltiple) en ~10 jugadas.</span>
-        <span class="cgo">Jugar ›</span>
-      </a>
-      <a class="card" href="cardle.html">
-        <span class="ci">🎴</span>
-        <span class="ct">Cardle</span>
-        <span class="cd">La carta se revela de a poco: color, tipo, coste, el arte… Adiviná con las mínimas pistas.</span>
-        <span class="cgo">Jugar ›</span>
-      </a>
-      <a class="card" href="wordle.html">
-        <span class="ci">🔤</span>
-        <span class="ct">Wordle MTG</span>
-        <span class="cd">Adiviná el nombre de una carta letra por letra, estilo Wordle. Verde, amarillo, gris.</span>
-        <span class="cgo">Jugar ›</span>
-      </a>
-      <a class="card" href="mtgdle.html">
-        <span class="ci">🧩</span>
-        <span class="ct">MTG-dle</span>
-        <span class="cd">Adiviná la carta del día por sus atributos: color, coste, tipo, rareza, subtipo.</span>
-        <span class="cgo">Jugar ›</span>
-      </a>
-      <a class="card" href="connections.html">
-        <span class="ci">🔗</span>
-        <span class="ct">Connections</span>
-        <span class="cd">16 cartas, 4 grupos. Encontrá la conexión oculta de cada grupo sin pasarte de errores.</span>
-        <span class="cgo">Jugar ›</span>
-      </a>
-      <a class="card" href="timeline.html">
-        <span class="ci">🗓️</span>
-        <span class="ct">Timeline</span>
-        <span class="cd">Ordená las cartas por su año de salida, de la más vieja a la más nueva.</span>
-        <span class="cgo">Jugar ›</span>
-      </a>
-      <a class="card" href="zoom.html">
-        <span class="ci">🔍</span>
-        <span class="ct">Zoom</span>
-        <span class="cd">Adiviná la carta desde un recorte mínimo del arte que se va agrandando.</span>
-        <span class="cgo">Jugar ›</span>
-      </a>
+<div class="topbar"><span class="sigil" style="font-size:20px">🔮</span><span class="tw">Magic The Oráculo</span></div>
+<div class="dots" id="dots"></div>
+<div class="hub" id="hub">
+
+  <section class="panel" id="p0" style="--acc:rgba(155,120,220,.32)">
+    <div class="pv">
+      <div class="m-orb"></div>
+      <div class="m-q">¿Es una criatura?</div>
+      <div class="m-pills"><span class="yes">Sí</span><span class="no">No</span><span class="idk">No sé</span></div>
     </div>
-    <p class="foot">Datos de <a href="https://scryfall.com">Scryfall</a> · hecho por diversión · Magic: The Gathering © Wizards of the Coast</p>
-  </main>
+    <h2 class="pt">El Oráculo</h2>
+    <p class="pd">Pensá una carta y te la adivino con preguntas en ~10 jugadas.</p>
+    <a class="play btn btn-primary" href="oraculo.html">Jugar ›</a>
+    <div class="hint">↓ deslizá para ver los 7 juegos ↓</div>
+  </section>
+
+  <section class="panel" id="p1" style="--acc:rgba(90,160,90,.28)">
+    <div class="pv">
+      <div class="m-art blur"></div>
+      <div class="m-chips"><span>🎨 Verde</span><span>💎 Coste 3</span><span>🃏 Criatura</span></div>
+      <div class="m-name">· · ·</div>
+    </div>
+    <h2 class="pt">Cardle</h2>
+    <p class="pd">La carta se revela de a poco: color, tipo, coste, el arte…</p>
+    <a class="play btn btn-primary" href="cardle.html">Jugar ›</a>
+  </section>
+
+  <section class="panel" id="p2" style="--acc:rgba(47,146,214,.26)">
+    <div class="pv">
+      <div class="m-art zoom"></div>
+      <div class="m-chips"><span>🔍 se aleja de a poco…</span></div>
+    </div>
+    <h2 class="pt">Zoom</h2>
+    <p class="pd">Adiviná la carta desde un recorte del arte que se agranda.</p>
+    <a class="play btn btn-primary" href="zoom.html">Jugar ›</a>
+  </section>
+
+  <section class="panel" id="p3" style="--acc:rgba(227,180,90,.26)">
+    <div class="pv">
+      <div class="m-wg">
+        <i class="b"></i><i class="y"></i><i class="g"></i><i class="b"></i><i class="b"></i>
+        <i class="g"></i><i class="b"></i><i class="g"></i><i class="y"></i><i class="b"></i>
+        <i class="g"></i><i class="g"></i><i class="g"></i><i class="g"></i><i class="g"></i>
+      </div>
+    </div>
+    <h2 class="pt">Wordle MTG</h2>
+    <p class="pd">Adiviná el nombre de una carta, letra por letra.</p>
+    <a class="play btn btn-primary" href="wordle.html">Jugar ›</a>
+  </section>
+
+  <section class="panel" id="p4" style="--acc:rgba(180,139,208,.26)">
+    <div class="pv">
+      <div class="m-cells"><i class="g">U</i><i class="y">3↑</i><i class="g">Cr</i><i class="b">R</i><i class="b">M12↓</i></div>
+      <div class="m-cells"><i class="b">R</i><i class="g">4</i><i class="b">In</i><i class="g">R</i><i class="y">DOM↓</i></div>
+    </div>
+    <h2 class="pt">MTG-dle</h2>
+    <p class="pd">Adiviná la carta por sus atributos: color, coste, tipo, rareza, expansión.</p>
+    <a class="play btn btn-primary" href="mtgdle.html">Jugar ›</a>
+  </section>
+
+  <section class="panel" id="p5" style="--acc:rgba(90,190,120,.26)">
+    <div class="pv">
+      <div class="m-conn" id="mconn"></div>
+    </div>
+    <h2 class="pt">Connections</h2>
+    <p class="pd">Agrupá 16 cartas en 4 grupos por su conexión oculta.</p>
+    <a class="play btn btn-primary" href="connections.html">Jugar ›</a>
+  </section>
+
+  <section class="panel" id="p6" style="--acc:rgba(214,120,60,.24)">
+    <div class="pv">
+      <div class="m-tl">
+        <div><div class="a"></div><div class="y">1993</div></div>
+        <div><div class="a"></div><div class="y">2006</div></div>
+        <div><div class="a"></div><div class="y">2014</div></div>
+        <div><div class="a"></div><div class="y">2022</div></div>
+      </div>
+      <div class="m-axis">← más vieja · más nueva →</div>
+    </div>
+    <h2 class="pt">Timeline</h2>
+    <p class="pd">Ordená las cartas por su año de salida, arrastrándolas.</p>
+    <a class="play btn btn-primary" href="timeline.html">Jugar ›</a>
+  </section>
+
 </div>
+<script>
+  // Connections preview: 16 squares in 4 group colours, scrambled
+  const GC=['#e3b45a','#57b368','#4a9fd6','#b98bd0'];
+  const cells=[]; for(let g=0;g<4;g++) for(let k=0;k<4;k++) cells.push(g);
+  for(let i=cells.length-1;i>0;i--){ const j=(i*7+3)%(i+1); [cells[i],cells[j]]=[cells[j],cells[i]]; }
+  document.getElementById('mconn').innerHTML = cells.map(g=>`<i style="background:${GC[g]}"></i>`).join('');
+
+  // dots nav + active tracking
+  const panels=[...document.querySelectorAll('.panel')], hub=document.getElementById('hub'), dots=document.getElementById('dots');
+  dots.innerHTML = panels.map((p,i)=>`<a href="#${p.id}" data-i="${i}"></a>`).join('');
+  const dotEls=[...dots.children];
+  const io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.isIntersecting){ const i=panels.indexOf(e.target);
+    dotEls.forEach((d,k)=>d.classList.toggle('on',k===i)); } }); }, {root:hub, threshold:.6});
+  panels.forEach(p=>io.observe(p));
+  dotEls.forEach(d=>d.onclick=e=>{ e.preventDefault(); panels[+d.dataset.i].scrollIntoView({behavior:'smooth'}); });
+</script>
 </body>
 </html>
