@@ -33,7 +33,7 @@ FAMOUS = {
     "Sheoldred, the Apocalypse", "Ugin, the Spirit Dragon", "Karn Liberated",
     "Emrakul, the Promised End", "Nicol Bolas, God-Pharaoh", "Atraxa, Praetors' Voice",
 }
-ranked = sorted((c for c in cards if c.get("id")),
+ranked = sorted((c for c in cards if c.get("id") and "//" not in c["n"]),
                 key=lambda c: c["rk"] if c.get("rk") is not None else 10 ** 9)
 
 out = []

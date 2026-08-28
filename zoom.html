@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoom — Magic The Oráculo</title>
+<meta name="description" content="Adiviná la carta de Magic desde un recorte del arte que se va agrandando.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%8D</text></svg>">
+<link rel="stylesheet" href="theme.css">
+<style>
+  main { text-align:center; }
+  .view { width:min(340px,82vw); aspect-ratio:626/457; margin:14px auto 0; border-radius:12px;
+    overflow:hidden; box-shadow:var(--shadow); background:var(--ink-2); position:relative; }
+  .view img { width:100%; height:100%; object-fit:cover; display:block; transform-origin:50% 50%;
+    transition:transform .7s cubic-bezier(.2,.7,.2,1); }
+  .zmeter { max-width:340px; margin:8px auto 0; height:5px; border-radius:99px; background:var(--ink-2); box-shadow:var(--ring); overflow:hidden; }
+  .zmeter > i { display:block; height:100%; background:linear-gradient(90deg,var(--gold-dim),var(--gold)); transition:width .6s; }
+  .guessrow { position:relative; max-width:440px; margin:18px auto 0; }
+  #guess { width:100%; box-sizing:border-box; background:var(--ink-2); color:var(--parchment);
+    border:1px solid var(--smoke-2); border-radius:12px; padding:13px 15px; font-family:'Spectral',serif; font-size:16px; text-align:center; }
+  #guess:focus { outline:2px solid var(--gold); outline-offset:1px; }
+  .sugg { position:absolute; left:0; right:0; top:52px; z-index:5; display:grid; gap:3px; background:var(--void); border-radius:10px; }
+  .sugg button { text-align:left; background:var(--ink); color:var(--parchment); border:1px solid var(--smoke); border-radius:8px; padding:9px 12px; cursor:pointer; font-family:'Spectral',serif; font-size:14px; }
+  .sugg button:hover { border-color:var(--gold); }
+  .meta { display:flex; align-items:center; justify-content:space-between; max-width:440px; margin:14px auto 0; font-family:'Jost',sans-serif; font-size:13px; color:var(--muted); }
+  .guesslog { max-width:440px; margin:12px auto 0; display:grid; gap:6px; }
+  .gl { color:var(--bad); font-size:14px; } .gl::before { content:"✗ "; }
+  .result-title { font-family:'Cinzel',serif; font-weight:700; font-size:clamp(24px,6vw,34px); margin:6px 0 2px; text-wrap:balance; }
+  .cardwrap { display:flex; justify-content:center; margin:14px 0; }
+  .cardwrap img { width:min(260px,70vw); border-radius:12px; box-shadow:var(--shadow); }
+  .center-actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+  .foot { color:var(--faint); text-align:center; font-family:'Jost',sans-serif; font-size:13px; margin-top:24px; }
+  .modepick { display:inline-flex; border:1px solid var(--smoke-2); border-radius:99px; overflow:hidden; margin-top:6px; }
+  .modepick button { background:transparent; border:none; color:var(--muted); padding:7px 16px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13px; }
+  .modepick button.on { background:var(--gold); color:#241a06; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">‹ Volver al hub</a>
+  <header class="mast">
+    <div class="sigil">🔍</div>
+    <h1 class="wordmark">Zoom</h1>
+    <p class="tagline">Se aleja de a poco. ¿Qué carta es?</p>
+    <div class="modepick" id="modepick"><button data-mode="daily" class="on">Del día</button><button data-mode="rand">Infinito</button></div>
+  </header>
+  <main>
+    <div id="game" hidden>
+      <div class="view"><img id="art" alt=""></div>
+      <div class="zmeter"><i id="zbar"></i></div>
+      <div class="guessrow">
+        <input id="guess" type="text" autocomplete="off" spellcheck="false" placeholder="Escribí el nombre de la carta…">
+        <div class="sugg" id="sugg"></div>
+      </div>
+      <div class="meta"><span id="tries"></span><button class="btn" id="skip" style="padding:8px 14px">Alejar un poco ▸</button></div>
+      <div class="guesslog" id="guesslog"></div>
+    </div>
+    <div id="result" hidden></div>
+    <p class="foot" id="loading">Cargando el grimorio…</p>
+  </main>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let POOL=[], NAMES=[], TARGETS=[], target=null, used=0, over=false, mode='daily';
+const MAX=6, Z0=7;   // start at 7x zoom, out to 1x
+
+fetch('data/games.json').then(r=>r.json()).then(d=>{
+  POOL=d.cards; NAMES=POOL.map(c=>c.n);
+  TARGETS=POOL.filter(c=>c.fam && !c.t.includes('Land')); if(!TARGETS.length) TARGETS=POOL.slice(0,400);
+  $('#loading').hidden=true; $('#game').hidden=false; start();
+}).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
+
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+function imgURL(c,k){ return `https://cards.scryfall.io/${k}/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`; }
+
+function start(){
+  over=false; used=0;
+  const seed = mode==='daily' ? hashStr('zoom'+todayKey()) : Math.floor(Math.random()*1e9);
+  target = TARGETS[seed % TARGETS.length];
+  // focus point (seeded) so the zoom isn't always dead-center
+  const fx = 25 + (seed % 50), fy = 25 + ((seed>>3) % 50);
+  const art=$('#art'); art.style.transformOrigin = `${fx}% ${fy}%`;
+  art.onerror=()=>{ art.onerror=null; art.src=imgURL(target,'normal'); };
+  art.src = imgURL(target,'art_crop');
+  $('#result').hidden=true; $('#game').hidden=false; $('#guess').value=''; $('#sugg').innerHTML=''; $('#guesslog').innerHTML='';
+  $('#guess').disabled=false; $('#skip').disabled=false;
+  render(); $('#guess').focus();
+}
+function render(){
+  const z = Z0 - (Z0-1)*(used/MAX);
+  $('#art').style.transform = `scale(${z.toFixed(2)})`;
+  $('#zbar').style.width = Math.round(100*used/MAX)+'%';
+  $('#tries').textContent = `Intentos: ${MAX-used}/${MAX}`;
+}
+$('#guess').addEventListener('input', e=>{
+  const q=e.target.value.trim().toLowerCase(), box=$('#sugg');
+  if(q.length<2){ box.innerHTML=''; return; }
+  const hits=[]; for(let i=0;i<POOL.length && hits.length<7;i++) if(NAMES[i].toLowerCase().includes(q)) hits.push(i);
+  box.innerHTML=hits.map(i=>`<button data-n="${esc(NAMES[i])}">${esc(NAMES[i])}</button>`).join('');
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>submit(b.dataset.n));
+});
+$('#guess').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const f=$('#sugg button'); if(f) submit(f.dataset.n); else submit($('#guess').value.trim()); }});
+$('#skip').addEventListener('click', ()=>{ if(over) return; used++; if(used>=MAX) return lose(); render(); });
+function submit(name){
+  if(over||!name) return; $('#sugg').innerHTML=''; $('#guess').value='';
+  if(name.toLowerCase()===target.n.toLowerCase()) return win();
+  used++; $('#guesslog').insertAdjacentHTML('beforeend', `<div class="gl">${esc(name)}</div>`);
+  if(used>=MAX) return lose(); render();
+}
+function endCard(){ return `<div class="cardwrap"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" onerror="this.src='${imgURL(target,'art_crop')}'"></div>`; }
+function finish(html){ over=true; $('#art').style.transform='scale(1)'; $('#game').hidden=true; $('#result').hidden=false; $('#result').innerHTML=html; }
+function win(){ finish(`<p class="eyebrow">¡La reconociste!</p><h2 class="result-title">${esc(target.n)}</h2>
+  <p style="color:var(--muted)">En ${used+1} intento${used?'s':''}</p>${endCard()}<div class="center-actions">${btns()}</div>`); }
+function lose(){ finish(`<p class="eyebrow" style="color:var(--bad)">Era…</p><h2 class="result-title">${esc(target.n)}</h2>${endCard()}<div class="center-actions">${btns()}</div>`); }
+function btns(){ return `<button class="btn btn-primary" onclick="location.reload()">${mode==='daily'?'Ver de nuevo':'Otra 🔀'}</button><a class="btn" href="index.html">Otros juegos</a>`; }
+document.querySelectorAll('#modepick button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#modepick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); mode=b.dataset.mode; if(POOL.length) start(); });
+function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+</script>
+</body>
+</html>
