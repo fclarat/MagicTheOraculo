@@ -77,7 +77,7 @@ const $ = s => document.querySelector(s);
 let POOL = [], NAMES = [], TARGETS = [], target = null, revealed = 0, used = 0, over = false, mode = 'daily';
 const MAX_TRIES = 6;
 
-fetch('data/games.json').then(r => r.json()).then(d => {
+fetch('data/games.json?v=3').then(r => r.json()).then(d => {
   POOL = d.cards;
   NAMES = POOL.map(c => c.n);
   TARGETS = POOL.filter(c => c.fam && !c.t.includes('Land'));  // famous, non-land (art is recognizable)
@@ -90,7 +90,7 @@ fetch('data/games.json').then(r => r.json()).then(d => {
 function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 
-function imgURL(c, kind){ return `https://cards.scryfall.io/${kind}/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`; }
+function imgURL(c, kind){ const id=c.fid||c.id; return `https://cards.scryfall.io/${kind}/front/${id[0]}/${id[1]}/${id}.jpg`; }
 
 /* ---- clue builders (in reveal order; only applicable ones) ---- */
 const COLW = { W:'--mW', U:'--mU', B:'--mB', R:'--mR', G:'--mG' };

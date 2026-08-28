@@ -24,8 +24,11 @@ if OUT.exists():
     except Exception:
         years = {}
 
+def done(v):   # a good cached entry has the year, first-print id and its set
+    return isinstance(v, dict) and v.get("y") and v.get("id") and v.get("set")
+
 names = [c["n"] for c in GAMES["cards"] if c.get("fam")]
-todo = [n for n in names if not years.get(n)]   # (re)fetch missing or previously-failed
+todo = [n for n in names if not done(years.get(n))]   # (re)fetch missing/old-format/failed
 print(f"{len(names)} famous cards, {len(todo)} to fetch")
 
 for i, name in enumerate(todo, 1):
@@ -38,8 +41,11 @@ for i, name in enumerate(todo, 1):
             req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=30) as r:
                 data = json.load(r)
-            rel = data["data"][0].get("released_at", "")
-            years[name] = int(rel[:4]) if rel[:4].isdigit() else None
+            first = data["data"][0]                       # earliest printing
+            rel = first.get("released_at", "")
+            yr = int(rel[:4]) if rel[:4].isdigit() else None
+            years[name] = {"y": yr, "id": first.get("id"), "set": first.get("set_name")} \
+                if (yr and first.get("id") and first.get("set_name")) else None
             ok = True
             break
         except Exception:

@@ -47,8 +47,25 @@ for c in ranked[:N]:
         "pt": c.get("pt"), "st": st, "fam": fam,
     })
 
+# merge first-print data (from build_years.py) so games can show the ORIGINAL,
+# recognizable art instead of a random recent reprint. fid = first-print card id.
+try:
+    yrs = json.loads((ROOT / "data" / "years.json").read_text(encoding="utf-8"))
+except Exception:
+    yrs = {}
+merged = 0
+for c in out:
+    y = yrs.get(c["n"])
+    if isinstance(y, dict) and y.get("id"):
+        c["fid"] = y["id"]
+        if y.get("y"):
+            c["yr"] = y["y"]
+        if y.get("set"):
+            c["set"] = y["set"]
+        merged += 1
+
 dest = ROOT / "data" / "games.json"
 dest.write_text(json.dumps({"cards": out}, ensure_ascii=False,
                            separators=(",", ":")), encoding="utf-8")
 kb = dest.stat().st_size / 1024
-print(f"Wrote {len(out)} cards -> {dest} ({kb:.0f} KB)")
+print(f"Wrote {len(out)} cards ({merged} with first-print art) -> {dest} ({kb:.0f} KB)")

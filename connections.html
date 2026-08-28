@@ -15,14 +15,19 @@
   .grp .gl { font-family:'Jost',sans-serif; font-weight:700; font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
   .grp .gc { font-family:'Spectral',serif; font-size:14px; margin-top:2px; }
   @keyframes pop { from{opacity:0;transform:scale(.96);} to{opacity:1;transform:none;} }
-  .grid { max-width:520px; margin:12px auto 0; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-  .tile { min-height:64px; display:flex; align-items:center; justify-content:center; text-align:center;
-    background:var(--ink-2); border:1px solid var(--smoke-2); border-radius:11px; padding:6px 5px; cursor:pointer;
-    font-family:'Spectral',serif; font-size:12px; line-height:1.15; color:var(--parchment);
-    user-select:none; transition:transform .1s, background .15s, border-color .15s; }
+  .grid { max-width:480px; margin:12px auto 0; display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+  .tile { position:relative; aspect-ratio:1/1; border:2px solid var(--smoke-2); border-radius:11px; overflow:hidden;
+    cursor:pointer; background:var(--ink-2); user-select:none; transition:transform .1s, border-color .15s, box-shadow .15s; }
+  .tile img { width:100%; height:100%; object-fit:cover; display:block; pointer-events:none; }
   .tile:hover { border-color:var(--gold-dim); }
-  .tile.sel { background:var(--gold); color:#241a06; border-color:var(--gold); transform:scale(.96); }
+  .tile.sel { border-color:var(--gold); transform:scale(.93); box-shadow:0 0 0 3px var(--gold) inset; }
+  .tile.near { border-color:var(--good); box-shadow:0 0 0 3px var(--good) inset; }
+  .tile.wrong { border-color:var(--bad); box-shadow:0 0 0 3px var(--bad) inset; }
   .tile.shake { animation:shake .4s; }
+  .tcap { position:absolute; left:0; right:0; bottom:0; font-size:9px; line-height:1.1; padding:3px 3px;
+    background:linear-gradient(0deg,rgba(0,0,0,.82),rgba(0,0,0,0)); color:#fff; font-family:'Jost',sans-serif;
+    text-align:center; opacity:0; transition:opacity .15s; }
+  .tile:hover .tcap { opacity:1; }
   @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
   .controls { display:flex; gap:10px; justify-content:center; margin:16px auto 0; flex-wrap:wrap; }
   .mistakes { display:flex; gap:7px; justify-content:center; align-items:center; margin:14px 0 0; color:var(--muted); font-family:'Jost',sans-serif; font-size:13px; }
@@ -63,11 +68,11 @@
 </div>
 <script>
 const $ = s => document.querySelector(s);
-let POOL=[], FAM=[], mode='daily', groups=[], cats=[], tiles=[], sel=[], solved=[], mistakes=0, over=false;
+let POOL=[], FAM=[], mode='daily', groups=[], cats=[], tiles=[], sel=[], solved=[], mistakes=0, over=false, locked=false;
 const MAX_MISTAKES=4;
 const GROUP_COLORS = ['#e3b45a', '#57b368', '#4a9fd6', '#b98bd0'];
 
-fetch('data/games.json').then(r=>r.json()).then(d=>{
+fetch('data/games.json?v=3').then(r=>r.json()).then(d=>{
   POOL=d.cards; FAM=POOL.filter(c=>c.fam);
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
@@ -125,6 +130,7 @@ function assign(chosen,rng){
   }
   return gs;
 }
+function imgURL(c,k){ const id=c.fid||c.id; return `https://cards.scryfall.io/${k}/front/${id[0]}/${id[1]}/${id}.jpg`; }
 
 function start(){
   over=false; sel=[]; solved=[]; mistakes=0;
@@ -132,7 +138,7 @@ function start(){
   let pz=null, tries=0;
   do { pz=makePuzzle(seed+tries*7919); tries++; } while(!pz && tries<20);
   cats=pz.cats; groups=pz.groups;
-  tiles=[]; groups.forEach((g,gi)=>g.forEach(c=>tiles.push({n:c.n, g:gi})));
+  tiles=[]; groups.forEach((g,gi)=>g.forEach(c=>tiles.push({n:c.n, id:c.id, fid:c.fid, g:gi})));
   shuf(tiles, mulberry(seed+1));
   $('#result').hidden=true; $('#game').hidden=false; $('#msg').textContent='';
   render();
@@ -140,17 +146,20 @@ function start(){
 function render(){
   $('#solved').innerHTML = solved.map(gi=>`<div class="grp" style="background:${GROUP_COLORS[gi]}">
     <div class="gl">${esc(cats[gi].label)}</div><div class="gc">${groups[gi].map(c=>esc(c.n)).join(' · ')}</div></div>`).join('');
-  $('#grid').innerHTML = tiles.map((t,i)=>`<div class="tile${sel.includes(i)?' sel':''}" data-i="${i}">${esc(t.n)}</div>`).join('');
+  $('#grid').innerHTML = tiles.map((t,i)=>`<div class="tile${sel.includes(i)?' sel':''}" data-i="${i}">
+    <img src="${imgURL(t,'art_crop')}" alt="${esc(t.n)}" onerror="this.onerror=null;this.src='${imgURL(t,'normal')}'">
+    <span class="tcap">${esc(t.n)}</span></div>`).join('');
   $('#grid').querySelectorAll('.tile').forEach(el=>el.onclick=()=>toggle(+el.dataset.i));
   $('#mistakes').innerHTML = 'Errores: ' + Array.from({length:MAX_MISTAKES},(_,i)=>`<span class="dot${i<mistakes?' used':''}"></span>`).join('');
 }
-function toggle(i){ if(over) return; const k=sel.indexOf(i); if(k>=0) sel.splice(k,1); else if(sel.length<4) sel.push(i); render(); }
+function toggle(i){ if(over||locked) return; const k=sel.indexOf(i); if(k>=0) sel.splice(k,1); else if(sel.length<4) sel.push(i); render(); }
 $('#deselect').onclick=()=>{ sel=[]; render(); };
 $('#shuffle').onclick=()=>{ shuf(tiles, mulberry(Math.floor(Math.random()*1e9))); sel=[]; render(); };
 $('#submit').onclick=submit;
 
 function submit(){
-  if(over||sel.length!==4) { if(sel.length!==4) flash('Elegí 4 cartas'); return; }
+  if(over||locked) return;
+  if(sel.length!==4){ flash('Elegí 4 cartas'); return; }
   const gis=sel.map(i=>tiles[i].g); const counts={}; gis.forEach(g=>counts[g]=(counts[g]||0)+1);
   const max=Math.max(...Object.values(counts));
   if(max===4){
@@ -160,10 +169,15 @@ function submit(){
     if(solved.length===4){ render(); return win(); }
     flash('¡Grupo!'); render();
   } else {
-    mistakes++; if(max===3) flash('Te faltó una…'); else flash('No es grupo');
-    sel.forEach(i=>{ const el=$(`.tile[data-i="${i}"]`); if(el){ el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),400);} });
-    if(mistakes>=MAX_MISTAKES) return lose();
-    render();
+    mistakes++;
+    $('#mistakes').innerHTML = 'Errores: ' + Array.from({length:MAX_MISTAKES},(_,i)=>`<span class="dot${i<mistakes?' used':''}"></span>`).join('');
+    const gi3 = max===3 ? +Object.keys(counts).find(k=>counts[k]===3) : -1;
+    sel.forEach(i=>{ const el=$(`.tile[data-i="${i}"]`); if(!el) return;
+      if(gi3>=0 && tiles[i].g===gi3) el.classList.add('near'); else el.classList.add('wrong','shake'); });
+    flash(max===3 ? 'Cambiá solo 1 🔁 (marqué las 3 que van)' : 'No es grupo');
+    locked=true;
+    const done = mistakes>=MAX_MISTAKES;
+    setTimeout(()=>{ locked=false; if(done) return lose(); sel=[]; render(); }, done?1200:1600);
   }
 }
 function flash(m){ $('#msg').textContent=m; setTimeout(()=>{ if($('#msg').textContent===m) $('#msg').textContent=''; },1300); }

@@ -65,7 +65,7 @@ let POOL=[], WORDS=[], target=null, L=0, row=0, col=0, grid=[], over=false, mode
 const ROWS=6;
 const keyState={};
 
-fetch('data/games.json').then(r=>r.json()).then(d=>{
+fetch('data/games.json?v=3').then(r=>r.json()).then(d=>{
   POOL=d.cards;
   WORDS = POOL.filter(c=>c.fam && /^[A-Za-z]{4,9}$/.test(c.n));   // famous single-word names
   if(!WORDS.length) WORDS = POOL.filter(c=>/^[A-Za-z]{4,9}$/.test(c.n)).slice(0,120);

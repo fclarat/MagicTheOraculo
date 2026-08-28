@@ -64,7 +64,7 @@ const $ = s => document.querySelector(s);
 let POOL=[], NAMES=[], TARGETS=[], target=null, used=0, over=false, mode='daily';
 const MAX=6, Z0=7;   // start at 7x zoom, out to 1x
 
-fetch('data/games.json').then(r=>r.json()).then(d=>{
+fetch('data/games.json?v=3').then(r=>r.json()).then(d=>{
   POOL=d.cards; NAMES=POOL.map(c=>c.n);
   TARGETS=POOL.filter(c=>c.fam && !c.t.includes('Land')); if(!TARGETS.length) TARGETS=POOL.slice(0,400);
   $('#loading').hidden=true; $('#game').hidden=false; start();
@@ -72,7 +72,7 @@ fetch('data/games.json').then(r=>r.json()).then(d=>{
 
 function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
-function imgURL(c,k){ return `https://cards.scryfall.io/${k}/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`; }
+function imgURL(c,k){ const id=c.fid||c.id; return `https://cards.scryfall.io/${k}/front/${id[0]}/${id[1]}/${id}.jpg`; }
 
 function start(){
   over=false; used=0;

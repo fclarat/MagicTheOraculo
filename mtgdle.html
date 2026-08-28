@@ -56,7 +56,7 @@
         <input id="guess" type="text" autocomplete="off" spellcheck="false" placeholder="Adiviná una carta…">
         <div class="sugg" id="sugg"></div>
       </div>
-      <p class="msg" id="msg">Verde = coincide · Amarillo = parcial · ↑/↓ = el coste real es mayor/menor</p>
+      <p class="msg" id="msg">Verde = coincide · Amarillo = parcial · ↑ la real es mayor / más nueva · ↓ menor / más vieja</p>
       <div class="board" id="board"></div>
     </div>
     <div id="result" hidden></div>
@@ -67,16 +67,20 @@
 const $ = s => document.querySelector(s);
 let POOL=[], NAMES=[], GUESSABLE=[], TARGETS=[], target=null, tries=0, over=false, mode='daily', rows=[];
 
-fetch('data/games.json').then(r=>r.json()).then(d=>{
+Promise.all([fetch('data/games.json?v=3').then(r=>r.json()), fetch('data/years.json?v=3').then(r=>r.json()).catch(()=>({}))])
+.then(([d,years])=>{
   POOL=d.cards; NAMES=POOL.map(c=>c.n);
-  GUESSABLE=POOL.slice(0,4000); TARGETS=POOL.filter(c=>c.fam);   // guess famous cards
-  if(!TARGETS.length) TARGETS=POOL.slice(0,600);
+  for(const c of POOL){ const y=years[c.n]; if(y&&y.y){ c.yr=y.y; c.set=y.set; } }
+  // target & guesses use famous cards WITH a first-print year+set, so the
+  // Expansión (antes/después) clue always has data on both sides.
+  GUESSABLE=POOL.filter(c=>c.fam && c.yr && c.set); TARGETS=GUESSABLE;
+  if(GUESSABLE.length<30){ GUESSABLE=POOL.filter(c=>c.fam); TARGETS=GUESSABLE; }  // fallback while years load
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
 
 function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
-function imgURL(c,k){ return `https://cards.scryfall.io/${k}/front/${c.id[0]}/${c.id[1]}/${c.id}.jpg`; }
+function imgURL(c,k){ const id=c.fid||c.id; return `https://cards.scryfall.io/${k}/front/${id[0]}/${id[1]}/${id}.jpg`; }
 
 const CORE=['Creature','Planeswalker','Land','Instant','Sorcery','Artifact','Enchantment','Battle'];
 function coreType(c){ for(const x of CORE) if(c.t.includes(x)) return x; return '—'; }
@@ -107,8 +111,15 @@ function cmp(g){
   const gs=subSet(g), ts=subSet(target); const inter=[...gs].filter(x=>ts.has(x));
   let scls='b'; if(gs.size&&ts.size&&inter.length===gs.size&&inter.length===ts.size) scls='g'; else if(inter.length) scls='y';
   out.push({cls:scls, html: (g.st||'—').slice(0,16)});
+  // expansión: same set = green; else arrow by first-print year (↑ = la real es más NUEVA)
+  if(g.set && target.set){
+    const ecls = g.set===target.set ? 'g' : (g.yr===target.yr ? 'y' : 'b');
+    const earr = g.set===target.set ? '' : (g.yr<target.yr ? '<span class="arrow">↑</span>' : g.yr>target.yr ? '<span class="arrow">↓</span>' : '');
+    out.push({cls:ecls, html:`${esc(setShort(g.set))}${earr}`});
+  } else out.push({cls:'b', html:'—'});
   return out;
 }
+function setShort(s){ return s.length>15 ? s.slice(0,14)+'…' : s; }
 
 function start(){
   over=false; tries=0; rows=[];
@@ -119,7 +130,7 @@ function start(){
 function renderBoard(){
   const b=$('#board');
   if(!rows.length){ b.innerHTML=''; return; }
-  let html='<table><thead><tr><th>Carta</th><th>Color</th><th>Coste</th><th>Tipo</th><th>Rareza</th><th>Subtipo</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th>Carta</th><th>Color</th><th>Coste</th><th>Tipo</th><th>Rareza</th><th>Subtipo</th><th>Expansión</th></tr></thead><tbody>';
   for(const r of rows){
     html+=`<tr><td class="name">${esc(r.g.n)}</td>`+
       r.cells.map(c=>`<td class="${c.cls}">${c.html}</td>`).join('')+'</tr>';
