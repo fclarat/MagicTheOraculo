@@ -12,7 +12,10 @@
   --shadow-sm:0 14px 34px -22px rgba(0,0,0,.85);
   --ring:0 0 0 1px var(--smoke);
   --hair:rgba(227,180,90,.16);   /* gold hairline for card bevels */
+  --tile-correct:var(--good); --tile-present:var(--warn);   /* wordle/mtgdle feedback: green / gold */
 }
+/* daltonismo: high-contrast orange + blue, distinguishable for all color-vision types */
+:root.cb { --tile-correct:#f5793a; --tile-present:#85c0f9; }
 * { box-sizing:border-box; }
 body {
   margin:0; min-height:100vh; overflow-x:hidden; position:relative;
@@ -93,6 +96,13 @@ body::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:no
 .rule::before { background:linear-gradient(90deg,transparent,var(--gold-dim)); }
 .rule::after { background:linear-gradient(90deg,var(--gold-dim),transparent); }
 .rule i { color:var(--gold); font-style:normal; font-size:11px; letter-spacing:.3em; opacity:.9; }
+
+/* colorblind toggle (Wordle / MTG-dle) */
+.cbtoggle { display:inline-flex; align-items:center; gap:6px; margin-top:8px; cursor:pointer;
+  background:transparent; border:1px solid var(--smoke-2); color:var(--muted);
+  border-radius:99px; padding:5px 13px; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:.02em; }
+.cbtoggle:hover { border-color:var(--gold-dim); color:var(--parchment); }
+.cbtoggle[aria-pressed="true"] { border-color:#f5793a; color:#f5793a; background:rgba(245,121,58,.08); }
 
 /* beveled card frame with gold corner brackets */
 .frame { position:relative; border:1px solid var(--smoke-2); border-radius:16px;

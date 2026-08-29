@@ -6,7 +6,7 @@
 <title>Cardle — Magic The Oráculo</title>
 <meta name="description" content="Adiviná la carta de Magic que se revela de a poco: color, tipo, coste, arte…">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%8E%B4</text></svg>">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=2">
 <style>
   main { text-align:center; }
   .art-wrap { position:relative; width:min(320px,80vw); aspect-ratio:626/457; margin:14px auto 0;
@@ -72,7 +72,7 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
-<script src="extras.js?v=1"></script>
+<script src="extras.js?v=2"></script>
 <script>
 const $ = s => document.querySelector(s);
 let POOL = [], NAMES = [], ALLNAMES = [], TARGETS = [], target = null, revealed = 0, used = 0, over = false, mode = 'daily';

@@ -6,7 +6,7 @@
 <title>MTG-dle — Magic The Oráculo</title>
 <meta name="description" content="Adiviná la carta de Magic del día por sus atributos: color, coste, tipo, rareza, subtipo.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A7%A9</text></svg>">
-<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="theme.css?v=2">
 <style>
   main { text-align:center; }
   .guessrow { position:relative; max-width:440px; margin:16px auto 0; }
@@ -25,8 +25,8 @@
     animation:flip .4s ease both; }
   @keyframes flip { from{transform:rotateX(90deg); opacity:0;} to{transform:none; opacity:1;} }
   td.name { width:118px; font-family:'Spectral',serif; font-size:12.5px; background:var(--ink-2); color:var(--parchment); }
-  td.g { background:var(--good); color:#0e1a12; border-color:var(--good); }
-  td.y { background:var(--warn); color:#241a06; border-color:var(--warn); }
+  td.g { background:var(--tile-correct); color:#0e1a12; border-color:var(--tile-correct); }
+  td.y { background:var(--tile-present); color:#241a06; border-color:var(--tile-present); }
   td.b { background:#241f2e; color:var(--muted); border-color:var(--smoke); }
   .arrow { font-size:17px; display:block; line-height:1; }
   .msg { min-height:20px; color:var(--muted); font-size:13.5px; margin:12px 0 0; font-family:'Jost',sans-serif; }
@@ -49,6 +49,7 @@
     <h1 class="wordmark">MTG-dle</h1>
     <p class="tagline">Adiviná la carta por sus atributos</p>
     <div class="modepick" id="modepick"><button data-mode="daily" class="on">Del día</button><button data-mode="rand">Infinito</button></div>
+    <div><button class="cbtoggle" id="cbtoggle" aria-pressed="false" title="Colores aptos para daltonismo (naranja / azul)">◑ Daltonismo</button></div>
   </header>
   <main>
     <div id="game" hidden>
@@ -63,7 +64,7 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
-<script src="extras.js?v=1"></script>
+<script src="extras.js?v=2"></script>
 <script>
 const $ = s => document.querySelector(s);
 let POOL=[], GUESSABLE=[], NAMEMAP=new Map(), TARGETS=[], target=null, tries=0, over=false, mode='daily', rows=[];

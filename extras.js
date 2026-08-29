@@ -94,3 +94,22 @@ window.MTO = (function () {
 
   return { end, stats, record, statsHtml };
 })();
+
+/* colorblind-safe palette (shared + persisted): swaps green/gold for orange/blue.
+   Applied to <html> so tiles pick it up before first render; any #cbtoggle button
+   in the page is auto-wired. The setting is shared across all games. */
+(function () {
+  try { if (localStorage.getItem('mto_cb') === '1') document.documentElement.classList.add('cb'); } catch (e) {}
+  function sync(btn) { if (btn) btn.setAttribute('aria-pressed', document.documentElement.classList.contains('cb') ? 'true' : 'false'); }
+  window.MTO.cbInit = function () {
+    var btn = document.getElementById('cbtoggle'); if (!btn) return;
+    sync(btn);
+    btn.onclick = function () {
+      var now = document.documentElement.classList.toggle('cb');
+      try { localStorage.setItem('mto_cb', now ? '1' : '0'); } catch (e) {}
+      sync(btn);
+    };
+  };
+  if (document.readyState !== 'loading') window.MTO.cbInit();
+  else document.addEventListener('DOMContentLoaded', window.MTO.cbInit);
+})();
