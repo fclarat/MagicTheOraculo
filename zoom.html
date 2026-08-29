@@ -62,11 +62,12 @@
 <script src="extras.js?v=1"></script>
 <script>
 const $ = s => document.querySelector(s);
-let POOL=[], NAMES=[], TARGETS=[], target=null, used=0, over=false, mode='daily';
+let POOL=[], NAMES=[], ALLNAMES=[], TARGETS=[], target=null, used=0, over=false, mode='daily';
 const MAX=6, Z0=7;   // start at 7x zoom, out to 1x
 
-fetch('data/games.json?v=3').then(r=>r.json()).then(d=>{
+Promise.all([fetch('data/all.json?v=4').then(r=>r.json()), fetch('data/games.json?v=4').then(r=>r.json())]).then(([a,d])=>{
   POOL=d.cards; NAMES=POOL.map(c=>c.n);
+  ALLNAMES=a.cards.map(c=>c.n);            // type ANY card, not just the famous ones
   TARGETS=POOL.filter(c=>c.fam && !c.t.includes('Land')); if(!TARGETS.length) TARGETS=POOL.slice(0,400);
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
@@ -99,8 +100,8 @@ function render(){
 $('#guess').addEventListener('input', e=>{
   const q=e.target.value.trim().toLowerCase(), box=$('#sugg');
   if(q.length<2){ box.innerHTML=''; return; }
-  const hits=[]; for(let i=0;i<POOL.length && hits.length<7;i++) if(NAMES[i].toLowerCase().includes(q)) hits.push(i);
-  box.innerHTML=hits.map(i=>`<button data-n="${esc(NAMES[i])}">${esc(NAMES[i])}</button>`).join('');
+  const hits=[]; for(let i=0;i<ALLNAMES.length && hits.length<7;i++) if(ALLNAMES[i].toLowerCase().includes(q)) hits.push(ALLNAMES[i]);
+  box.innerHTML=hits.map(n=>`<button data-n="${esc(n)}">${esc(n)}</button>`).join('');
   box.querySelectorAll('button').forEach(b=>b.onclick=()=>submit(b.dataset.n));
 });
 $('#guess').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const f=$('#sugg button'); if(f) submit(f.dataset.n); else submit($('#guess').value.trim()); }});

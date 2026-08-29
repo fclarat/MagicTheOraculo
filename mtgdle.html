@@ -66,16 +66,23 @@
 <script src="extras.js?v=1"></script>
 <script>
 const $ = s => document.querySelector(s);
-let POOL=[], NAMES=[], GUESSABLE=[], TARGETS=[], target=null, tries=0, over=false, mode='daily', rows=[];
+let POOL=[], GUESSABLE=[], NAMEMAP=new Map(), TARGETS=[], target=null, tries=0, over=false, mode='daily', rows=[];
 
-Promise.all([fetch('data/games.json?v=3').then(r=>r.json()), fetch('data/years.json?v=3').then(r=>r.json()).catch(()=>({}))])
-.then(([d,years])=>{
-  POOL=d.cards; NAMES=POOL.map(c=>c.n);
-  for(const c of POOL){ const y=years[c.n]; if(y&&y.y){ c.yr=y.y; c.set=y.set; } }
-  // target & guesses use famous cards WITH a first-print year+set, so the
-  // Expansión (antes/después) clue always has data on both sides.
-  GUESSABLE=POOL.filter(c=>c.fam && c.yr && c.set); TARGETS=GUESSABLE;
-  if(GUESSABLE.length<30){ GUESSABLE=POOL.filter(c=>c.fam); TARGETS=GUESSABLE; }  // fallback while years load
+// all.json = every card (typeable); games.json = the curated famous set that the
+// daily ANSWER is drawn from, and the only cards with first-print year+set+subtype.
+Promise.all([fetch('data/all.json?v=4').then(r=>r.json()), fetch('data/games.json?v=4').then(r=>r.json())])
+.then(([a,d])=>{
+  POOL=d.cards;
+  const rich=new Map(POOL.map(c=>[c.n,c]));
+  GUESSABLE=a.cards;                                  // you can type ANY card
+  for(const c of GUESSABLE){
+    const r=rich.get(c.n);
+    if(r){ c.st=r.st; c.yr=r.yr; c.set=r.set; c.fid=r.fid; c.fam=r.fam; }   // famous: full data
+    else { const p=(c.t||'').split('—'); c.st=p[1]?p[1].trim():''; }        // else derive subtype from the type line
+  }
+  NAMEMAP=new Map(GUESSABLE.map(c=>[c.n.toLowerCase(),c]));
+  TARGETS=POOL.filter(c=>c.fam && c.yr && c.set);     // daily answer stays famous & recognizable
+  if(!TARGETS.length) TARGETS=POOL.filter(c=>c.fam);
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
 
@@ -117,7 +124,7 @@ function cmp(g){
     const ecls = g.set===target.set ? 'g' : (g.yr===target.yr ? 'y' : 'b');
     const earr = g.set===target.set ? '' : (g.yr<target.yr ? '<span class="arrow">↑</span>' : g.yr>target.yr ? '<span class="arrow">↓</span>' : '');
     out.push({cls:ecls, html:`${esc(setShort(g.set))}${earr}`});
-  } else out.push({cls:'b', html:'—'});
+  } else out.push({cls:'b', html:'?'});   // typed a non-famous card: no first-print set on file
   return out;
 }
 function setShort(s){ return s.length>15 ? s.slice(0,14)+'…' : s; }
@@ -141,7 +148,7 @@ function renderBoard(){
 }
 function guessCard(name){
   if(over) return;
-  const g=POOL.find(c=>c.n.toLowerCase()===name.toLowerCase()); if(!g) return;
+  const g=NAMEMAP.get(name.toLowerCase()); if(!g) return;
   $('#guess').value=''; $('#sugg').innerHTML='';
   tries++;
   rows.unshift({ g, cells: cmp(g) });

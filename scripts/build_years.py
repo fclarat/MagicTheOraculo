@@ -10,6 +10,7 @@ import json
 import time
 import urllib.parse
 import urllib.request
+import urllib.error
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -31,12 +32,13 @@ names = [c["n"] for c in GAMES["cards"] if c.get("fam")]
 todo = [n for n in names if not done(years.get(n))]   # (re)fetch missing/old-format/failed
 print(f"{len(names)} famous cards, {len(todo)} to fetch")
 
+fails = []
 for i, name in enumerate(todo, 1):
     q = urllib.parse.quote(f'!"{name}"')
     url = (f"https://api.scryfall.com/cards/search?q={q}"
            f"&unique=prints&order=released&dir=asc")
     ok = False
-    for attempt in range(3):
+    for attempt in range(6):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=30) as r:
@@ -48,12 +50,20 @@ for i, name in enumerate(todo, 1):
                 if (yr and first.get("id") and first.get("set_name")) else None
             ok = True
             break
+        except urllib.error.HTTPError as e:
+            if e.code == 404:                             # name truly not found: don't hammer
+                years[name] = None
+                ok = True
+                break
+            wait = e.headers.get("Retry-After")           # 429/503: honor server, else exp backoff
+            time.sleep(float(wait) if wait else min(2 ** attempt, 20))
         except Exception:
-            time.sleep(1.5)          # likely a 429; back off and retry
+            time.sleep(min(2 ** attempt, 20))             # network hiccup: exp backoff
     if not ok:
         years[name] = None
-    if i % 50 == 0:
-        print(f"  {i}/{len(todo)}")
+        fails.append(name)
+    if i % 25 == 0:
+        print(f"  {i}/{len(todo)} (fails so far: {len(fails)})")
         OUT.write_text(json.dumps(years, ensure_ascii=False), encoding="utf-8")
     time.sleep(0.2)                  # ~5 req/s, within Scryfall's limit
 

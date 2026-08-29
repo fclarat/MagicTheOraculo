@@ -73,7 +73,7 @@ let POOL=[], FAM=[], mode='daily', groups=[], cats=[], tiles=[], sel=[], solved=
 const MAX_MISTAKES=4;
 const GROUP_COLORS = ['#e3b45a', '#57b368', '#4a9fd6', '#b98bd0'];
 
-fetch('data/games.json?v=3').then(r=>r.json()).then(d=>{
+fetch('data/games.json?v=4').then(r=>r.json()).then(d=>{
   POOL=d.cards; FAM=POOL.filter(c=>c.fam);
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
