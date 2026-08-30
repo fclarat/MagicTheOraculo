@@ -6,7 +6,7 @@
 <title>MTG-dle — Magic The Oráculo</title>
 <meta name="description" content="Adiviná la carta de Magic del día por sus atributos: color, coste, tipo, rareza, subtipo.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A7%A9</text></svg>">
-<link rel="stylesheet" href="theme.css?v=2">
+<link rel="stylesheet" href="theme.css?v=3">
 <style>
   main { text-align:center; }
   .guessrow { position:relative; max-width:440px; margin:16px auto 0; }
@@ -43,13 +43,15 @@
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="index.html">‹ Volver al hub</a>
+  <div class="topbar">
+    <a class="back" href="index.html">‹ Volver al hub</a>
+    <button class="cbtoggle" id="cbtoggle" aria-pressed="false" aria-label="Modo daltónico: colores naranja y azul" title="Modo daltónico (naranja / azul)">◑ daltónico</button>
+  </div>
   <header class="mast">
     <div class="sigil">🧩</div>
     <h1 class="wordmark">MTG-dle</h1>
     <p class="tagline">Adiviná la carta por sus atributos</p>
     <div class="modepick" id="modepick"><button data-mode="daily" class="on">Del día</button><button data-mode="rand">Infinito</button></div>
-    <div><button class="cbtoggle" id="cbtoggle" aria-pressed="false" title="Colores aptos para daltonismo (naranja / azul)">◑ Daltonismo</button></div>
   </header>
   <main>
     <div id="game" hidden>

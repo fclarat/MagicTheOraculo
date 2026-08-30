@@ -97,12 +97,14 @@ body::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:no
 .rule::after { background:linear-gradient(90deg,var(--gold-dim),transparent); }
 .rule i { color:var(--gold); font-style:normal; font-size:11px; letter-spacing:.3em; opacity:.9; }
 
-/* colorblind toggle (Wordle / MTG-dle) */
-.cbtoggle { display:inline-flex; align-items:center; gap:6px; margin-top:8px; cursor:pointer;
-  background:transparent; border:1px solid var(--smoke-2); color:var(--muted);
-  border-radius:99px; padding:5px 13px; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:.02em; }
-.cbtoggle:hover { border-color:var(--gold-dim); color:var(--parchment); }
-.cbtoggle[aria-pressed="true"] { border-color:#f5793a; color:#f5793a; background:rgba(245,121,58,.08); }
+/* top utility row: back link (left) + subtle accessibility toggle (right) */
+.topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+/* colorblind toggle — a quiet corner utility, matched to the back link's weight */
+.cbtoggle { display:inline-flex; align-items:center; gap:5px; cursor:pointer;
+  background:transparent; border:1px solid transparent; color:var(--faint);
+  border-radius:99px; padding:4px 10px; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:.03em; }
+.cbtoggle:hover { color:var(--parchment); border-color:var(--smoke-2); }
+.cbtoggle[aria-pressed="true"] { color:#f5793a; border-color:rgba(245,121,58,.5); background:rgba(245,121,58,.08); }
 
 /* beveled card frame with gold corner brackets */
 .frame { position:relative; border:1px solid var(--smoke-2); border-radius:16px;
