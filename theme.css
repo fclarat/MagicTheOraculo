@@ -37,6 +37,7 @@ body::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:no
 
 .mast { text-align:center; margin:6px 0 14px; }
 .sigil { font-size:35px; line-height:1; filter:drop-shadow(0 0 15px rgba(98,206,255,.55)); }
+.magic-mark { display:inline-grid; place-items:center; width:45px; height:45px; border:1px solid #b78645; border-radius:4px 4px 14px 14px; background:linear-gradient(145deg,#3a2218,#17100d); color:#f0cf85; font-family:'Cinzel',serif; font-size:30px; font-weight:700; line-height:1; text-shadow:0 2px 0 #130b08; box-shadow:inset 0 0 0 2px rgba(244,213,150,.09),0 4px 10px rgba(0,0,0,.45); filter:drop-shadow(0 3px 4px rgba(0,0,0,.6)); }
 .wordmark { font-family:'Unbounded',sans-serif; font-weight:700; letter-spacing:-.055em;
   font-size:clamp(24px,5.7vw,39px); margin:9px 0 3px; color:var(--parchment); }
 .tagline { color:var(--muted); font-size:14px; margin:0; letter-spacing:.035em; }
