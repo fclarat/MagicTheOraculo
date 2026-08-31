@@ -21,17 +21,31 @@
 <style>
   main { text-align:center; }
   .sub { color:var(--muted); font-size:14.5px; margin:10px auto 0; max-width:480px; }
-  .clues { max-width:560px; margin:16px auto 0; display:flex; flex-direction:column; gap:10px; text-align:left; }
-  .clue { background:linear-gradient(180deg,var(--ink-2),var(--ink)); border:1px solid var(--smoke-2);
-    border-radius:12px; padding:12px 15px; box-shadow:inset 0 0 0 1px var(--hair); animation:cluein .35s ease both; }
+  /* the card "sheet" — assembles as clues reveal; tints to the card's colour */
+  .sheet { max-width:470px; margin:16px auto 0; text-align:left; position:relative;
+    background:linear-gradient(180deg,var(--ink-2),var(--ink)); border:1px solid var(--smoke-2); border-radius:16px; padding:14px;
+    box-shadow:inset 0 0 0 1px var(--tint,var(--hair)), 0 0 36px -18px var(--tintglow,transparent), var(--shadow-sm);
+    transition:box-shadow .45s ease; }
+  .sheet-title { display:flex; align-items:center; justify-content:center; gap:9px; margin-bottom:12px; padding:9px;
+    font-family:'Cinzel',serif; font-size:15px; letter-spacing:.05em; color:var(--faint);
+    background:linear-gradient(180deg,rgba(255,255,255,.04),transparent); border:1px solid var(--smoke-2); border-radius:10px; }
+  .sheet-title .masked { letter-spacing:.28em; color:var(--muted); }
+  .clues { display:flex; flex-direction:column; gap:10px; }
+  .clue { animation:cluein .35s ease both; }
   @keyframes cluein { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
-  .clue .lab { display:block; font-family:'Jost',sans-serif; text-transform:uppercase; letter-spacing:.14em;
-    font-size:10.5px; font-weight:600; color:var(--faint); margin-bottom:5px; }
-  .clue .val { font-size:15px; line-height:1.5; color:var(--parchment); }
-  .clue .flav { font-style:italic; font-family:'Spectral',serif; color:#d8cdb0; }
-  .clue .rules { white-space:pre-wrap; font-family:'Spectral',serif; }
-  .clue.pending { border-style:dashed; opacity:.5; text-align:center; color:var(--faint); font-family:'Jost',sans-serif; font-size:13px; }
-  .mana { margin-right:3px; }
+  .clab { display:block; font-family:'Jost',sans-serif; text-transform:uppercase; letter-spacing:.16em;
+    font-size:9.5px; font-weight:600; color:var(--faint); margin-bottom:5px; }
+  .clue.flavor { text-align:center; padding:4px 10px 6px; }
+  .clue.flavor .txt { font-style:italic; font-family:'Spectral',serif; font-size:16.5px; line-height:1.6; color:#e2d8bc; text-wrap:balance; }
+  .clue.rules { background:rgba(0,0,0,.24); border:1px solid var(--smoke-2); border-radius:11px; padding:11px 13px; }
+  .clue.rules .rtext { white-space:pre-wrap; font-family:'Spectral',serif; font-size:14.5px; line-height:1.6; color:var(--parchment); }
+  .stats { display:flex; flex-wrap:wrap; gap:8px; }
+  .stat { flex:1 1 auto; min-width:104px; background:rgba(0,0,0,.24); border:1px solid var(--smoke-2); border-radius:11px;
+    padding:8px 12px; animation:cluein .3s ease both; }
+  .stat .sval { font-family:'Jost',sans-serif; font-size:14.5px; color:var(--parchment); display:flex; align-items:center; gap:6px; }
+  .pending { text-align:center; color:var(--faint); font-family:'Jost',sans-serif; font-size:12.5px; padding:8px 4px 2px; }
+  .mana { margin-right:2px; }
+  .mana.sm { width:17px; height:17px; font-size:9px; vertical-align:middle; margin:0 1px; }
   .mana.n { background:radial-gradient(circle at 38% 30%,#efe9dd,#b0a794 82%); color:#3a3527; }
   .guessrow { position:relative; max-width:480px; margin:18px auto 0; }
   #guess { width:100%; box-sizing:border-box; background:var(--ink-2); color:var(--parchment);
@@ -69,7 +83,10 @@
   <main>
     <div id="game" hidden>
       <p class="sub">Empezás con una sola pista. Cada intento fallido (o “Otra pista”) revela una más — <b>ganás con menos pistas</b>.</p>
-      <div class="clues" id="clues"></div>
+      <div class="sheet" id="sheet">
+        <div class="sheet-title">📖 <span class="masked">▮ ▮ ▮ ▮ ▮</span></div>
+        <div class="clues" id="clues"></div>
+      </div>
       <div class="guessrow">
         <input id="guess" type="text" autocomplete="off" spellcheck="false" placeholder="Escribí el nombre de la carta…">
         <div class="sugg" id="sugg"></div>
@@ -111,14 +128,25 @@ function manaHTML(mc){
   return syms.map(s=>{ const t=s.slice(1,-1); const cls={W:'w',U:'u',B:'b',R:'r',G:'g',C:'c'}[t];
     return cls ? `<span class="mana ${cls}">${t}</span>` : `<span class="mana n">${esc(t)}</span>`; }).join('');
 }
+function rulesHTML(t){
+  return esc(t).replace(/\{([^}]+)\}/g,(m,sym)=>{
+    const cls={W:'w',U:'u',B:'b',R:'r',G:'g',C:'c'}[sym];
+    if(cls) return `<span class="mana ${cls} sm">${sym}</span>`;
+    const lab = sym==='T'?'↷' : sym==='Q'?'↺' : sym;
+    return `<span class="mana n sm">${esc(lab)}</span>`;
+  });
+}
+const TINT={W:'240,230,192',U:'43,125,191',B:'120,110,150',R:'209,63,43',G:'44,154,92'};
+function tintRGB(co){ if(!co) return '176,167,148'; if(co.length>=2) return '227,180,90'; return TINT[co]||'176,167,148'; }
+
 function buildClues(c){
   const cl=[];
-  if(c.fl) cl.push({lab:'Frase (flavor)', html:`<span class="flav">“${esc(c.fl)}”</span>`});
-  cl.push({lab:'Texto de reglas', html:`<span class="rules">${esc(c.ot)}</span>`});
-  cl.push({lab:'Color', html:`${colorPips(c.co)} &nbsp;${colorWord(c.co)}`});
-  cl.push({lab:'Coste de maná', html: manaHTML(c.mc)});
-  cl.push({lab:'Tipo', html: esc(c.t)});
-  if(c.pt) cl.push({lab:'Fuerza / Resistencia', html:`<b>${esc(c.pt)}</b>`});
+  if(c.fl) cl.push({kind:'flavor', text:c.fl});
+  cl.push({kind:'rules', text:c.ot});
+  cl.push({kind:'stat', lab:'Color', html:`${colorPips(c.co)} <span>${colorWord(c.co)}</span>`});
+  cl.push({kind:'stat', lab:'Coste', html: c.mc ? manaHTML(c.mc) : '<span style="color:var(--faint)">sin coste</span>'});
+  cl.push({kind:'stat', lab:'Tipo', html: esc(c.t)});
+  if(c.pt) cl.push({kind:'stat', lab:'Fuerza / Resist.', html:`<b>${esc(c.pt)}</b>`});
   return cl;
 }
 
@@ -132,9 +160,19 @@ function start(){
   render(); $('#guess').focus();
 }
 function render(){
-  let html = clues.slice(0, revealed).map(c=>`<div class="clue"><span class="lab">${c.lab}</span><div class="val">${c.html}</div></div>`).join('');
-  if(revealed < clues.length) html += `<div class="clue pending">🔒 ${clues.length-revealed} pista${clues.length-revealed>1?'s':''} más — probá o pedí “Otra pista”.</div>`;
+  const shown = clues.slice(0, revealed);
+  let html='', stats=[], colorShown=false;
+  for(const c of shown){
+    if(c.kind==='flavor') html += `<div class="clue flavor"><div class="txt">${esc(c.text)}</div></div>`;
+    else if(c.kind==='rules') html += `<div class="clue rules"><span class="clab">Texto de reglas</span><div class="rtext">${rulesHTML(c.text)}</div></div>`;
+    else { stats.push(c); if(c.lab==='Color') colorShown=true; }
+  }
+  if(stats.length) html += `<div class="stats">` + stats.map(s=>`<div class="stat"><span class="clab">${s.lab}</span><div class="sval">${s.html}</div></div>`).join('') + `</div>`;
+  if(revealed < clues.length) html += `<div class="pending">🔒 ${clues.length-revealed} pista${clues.length-revealed>1?'s':''} más — probá o pedí “Otra pista”.</div>`;
   $('#clues').innerHTML = html;
+  const sheet=$('#sheet');
+  if(colorShown){ const rgb=tintRGB(target.co); sheet.style.setProperty('--tint',`rgba(${rgb},.55)`); sheet.style.setProperty('--tintglow',`rgba(${rgb},.5)`); }
+  else { sheet.style.setProperty('--tint','var(--hair)'); sheet.style.setProperty('--tintglow','transparent'); }
   $('#count').textContent = `Pista ${Math.min(revealed,clues.length)} de ${clues.length}`;
   $('#next').disabled = revealed >= clues.length;
 }
