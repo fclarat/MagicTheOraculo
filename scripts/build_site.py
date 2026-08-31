@@ -22,7 +22,9 @@ inner = app.replace("__DATA__", data)
 # artifact: inner content only (Claude wraps it in <html>/<head>/<body>)
 (ROOT / "artifact.html").write_text(inner, encoding="utf-8")
 
-# index.html: full standalone page
+# oraculo.html: full standalone page for GitHub Pages.
+# Keep its social metadata in this generator so a normal rebuild cannot erase
+# the tags that add_og.py injected into an earlier version.
 FAVICON = ("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' "
            "viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%AE</text></svg>")
 page = f"""<!doctype html>
@@ -30,8 +32,19 @@ page = f"""<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Magic The Oráculo</title>
+<title>Magic The Mini Games — El Oráculo</title>
 <meta name="description" content="Un oráculo de 20 preguntas que adivina tu carta de Magic: The Gathering por sus propiedades.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Magic The Mini Games — El Oráculo">
+<meta property="og:description" content="Un oráculo de 20 preguntas que adivina tu carta de Magic: The Gathering por sus propiedades.">
+<meta property="og:url" content="https://fclarat.github.io/MagicTheOraculo/oraculo.html">
+<meta property="og:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Magic The Mini Games — El Oráculo">
+<meta name="twitter:description" content="Un oráculo de 20 preguntas que adivina tu carta de Magic: The Gathering por sus propiedades.">
+<meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="{FAVICON}">
 </head>
 <body>

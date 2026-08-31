@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
 Build data/games.json: a lean, popularity-ranked subset of the cards for the
-mini-games (Cardle / Wordle / MTG-dle). Only the fields the games need, and only
-reasonably well-known cards (top by EDHREC rank, with an image), so targets are
-guessable.
+mini-games. It also writes famous.json, the ~600-card answer pool used by every
+game except MTG-dle. Only the fields the games need are retained.
 
     python scripts/build_games_data.py
 """
@@ -69,3 +68,13 @@ dest.write_text(json.dumps({"cards": out}, ensure_ascii=False,
                            separators=(",", ":")), encoding="utf-8")
 kb = dest.stat().st_size / 1024
 print(f"Wrote {len(out)} cards ({merged} with first-print art) -> {dest} ({kb:.0f} KB)")
+
+# Most games only draw daily answers from the famous set. Keeping that subset
+# separate means those pages no longer need to download the whole 6,000-card
+# game pool just to choose one of ~600 recognizable cards.
+famous = [c for c in out if c["fam"]]
+famous_dest = ROOT / "data" / "famous.json"
+famous_dest.write_text(json.dumps({"cards": famous}, ensure_ascii=False,
+                                  separators=(",", ":")), encoding="utf-8")
+famous_kb = famous_dest.stat().st_size / 1024
+print(f"Wrote {len(famous)} famous cards -> {famous_dest} ({famous_kb:.0f} KB)")

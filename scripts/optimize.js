@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Offline optimizer for the Magic The Oráculo engine. Replicates the engine
+ * Offline optimizer for the Magic The Mini Games Oracle engine. Replicates the engine
  * exactly but keeps a *pruned active set* (cards a perfect player has already
  * ruled out are dropped), so thousands of games run in seconds.
  *

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Render og.png (1200x630) — the share/link preview card for Magic The Oráculo.
+Render og.png (1200x630) — the share/link preview card for Magic The Mini Games.
 Dark mystical background, the five WUBRG mana pips, the wordmark and a subtitle.
 
     python scripts/build_og.py
@@ -75,7 +75,7 @@ def centered(text, y, fnt, fill):
     b = d.textbbox((0, 0), text, font=fnt)
     d.text(((W - (b[2] - b[0])) / 2 - b[0], y), text, font=fnt, fill=fill)
 
-centered("Magic The Oráculo", 268, f_title, (227, 180, 90))
+centered("Magic The Mini Games", 268, f_title, (227, 180, 90))
 centered("8 juegos para adivinar cartas de Magic", 392, f_sub, (206, 196, 170))
 centered("fclarat.github.io/MagicTheOraculo", 540, f_foot, (150, 130, 90))
 

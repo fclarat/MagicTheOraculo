@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Magic The Oráculo</title>
+<title>Magic The Mini Games — El Oráculo</title>
 <meta name="description" content="Un oráculo de 20 preguntas que adivina tu carta de Magic: The Gathering por sus propiedades.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Magic The Oráculo">
+<meta property="og:title" content="Magic The Mini Games — El Oráculo">
 <meta property="og:description" content="Un oráculo de 20 preguntas que adivina tu carta de Magic: The Gathering por sus propiedades.">
 <meta property="og:url" content="https://fclarat.github.io/MagicTheOraculo/oraculo.html">
 <meta property="og:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Magic The Oráculo">
+<meta name="twitter:title" content="Magic The Mini Games — El Oráculo">
 <meta name="twitter:description" content="Un oráculo de 20 preguntas que adivina tu carta de Magic: The Gathering por sus propiedades.">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%AE</text></svg>">
@@ -374,6 +374,34 @@
     color: var(--gold); font-size: 13px;
   }
 
+  /* ---- interplanar arcade reskin --------------------------------------- */
+  :root { --void:#070914; --ink:#101528; --ink-2:#181f39; --smoke:#29314e; --smoke-2:#46527b; --parchment:#f5f7ff; --muted:#aab5d7; --faint:#7d89ae; --gold:#b8ff4d; --gold-dim:#83cf27; --good:#69eb8a; --bad:#ff7184; --shadow:0 28px 80px -28px rgba(0,0,0,.9); }
+  body { font-family:'Jost',system-ui,sans-serif; background:radial-gradient(900px 700px at -8% -10%,rgba(119,61,255,.34),transparent 57%),radial-gradient(800px 570px at 108% 12%,rgba(0,208,255,.21),transparent 55%),linear-gradient(140deg,#070914,#0a1020 46%,#070914); }
+  body::before { background-image:linear-gradient(rgba(151,177,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(151,177,255,.06) 1px,transparent 1px); background-size:38px 38px; opacity:.7; }
+  .wrap { max-width:760px; }
+  .sigil { filter:drop-shadow(0 0 16px rgba(91,213,255,.62)); }
+  .wordmark,.result-title { font-family:'Cinzel',serif; letter-spacing:.02em; background:none; color:var(--parchment); }
+  .tagline { color:var(--muted); }
+  .btn { border-radius:12px; background:rgba(24,31,57,.9); border-color:var(--smoke-2); box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 12px 25px -19px rgba(0,0,0,.9); }
+  .btn:hover { border-color:#78d9ff; background:#202947; box-shadow:0 13px 28px -18px rgba(55,188,255,.7); }
+  .btn-primary { color:#0a1601; border-color:#d5ff91; background:linear-gradient(135deg,#d6ff75,#8be835); }
+  .orb { --glow:radial-gradient(circle at 34% 27%,#efffff,#7ee6ff 28%,#5860e8 59%,#271554 100%); box-shadow:0 0 0 1px rgba(133,223,255,.5),0 0 0 10px rgba(114,93,255,.09),0 0 50px 3px rgba(82,203,255,.35); }
+  .orb-base { background:linear-gradient(90deg,transparent,#56d5ff,#b8ff4d,transparent); }
+  .question { font-family:'Cinzel',serif; max-width:21ch; }
+  .answers,.grid-opts { max-width:500px; }
+  .ans { min-height:50px; }
+  .meter > i,.sbar > i { background:linear-gradient(90deg,#55d5ff,var(--gold)); }
+  .suspects { border-top-color:rgba(117,165,255,.25); }
+  .pick-row,.loselist .li { background:linear-gradient(145deg,rgba(29,38,73,.95),rgba(10,14,31,.96)); border-color:rgba(103,124,185,.55); }
+  .pick-row:hover { border-color:#6bd6ff; }
+  .result-title { font-size:clamp(25px,6vw,38px); }
+  .mtg { box-shadow:0 26px 55px -23px #000,0 0 0 1px rgba(112,210,255,.25); }
+
+  /* The Oracle belongs to the same Magic table as the hub. */
+  :root { --void:#17110e; --ink:#211815; --ink-2:#30211b; --smoke:#5a4032; --smoke-2:#8e6d4d; --parchment:#f3e6cb; --muted:#c7ae91; --faint:#947963; --gold:#e0b158; --gold-dim:#b57a31; --good:#76bd7a; --bad:#d36e5d; --shadow:0 25px 60px -24px rgba(0,0,0,.9); }
+  body { background:radial-gradient(850px 520px at 50% -15%,rgba(108,56,34,.38),transparent 62%),radial-gradient(760px 480px at 7% 93%,rgba(68,35,22,.36),transparent 62%),linear-gradient(135deg,#120e0c,#231711 50%,#100d0b); font-family:'Spectral',Georgia,serif; }
+  body::before { opacity:.24; background-image:repeating-linear-gradient(112deg,rgba(255,231,183,.08) 0 1px,transparent 1px 7px); background-size:auto; }.wordmark,.result-title{color:var(--parchment);text-shadow:0 2px 1px #1c100a}.tagline{color:#d7b998}.btn{font-family:'Cinzel',serif;border-radius:6px;border-color:#896348;background:linear-gradient(180deg,#3c291f,#211712);box-shadow:inset 0 1px rgba(255,238,204,.12),0 6px 12px -8px #000}.btn:hover{border-color:#e4c27b;background:linear-gradient(180deg,#4a3022,#281a14);box-shadow:0 10px 20px -13px #000}.btn-primary{color:#271506;border-color:#f2d58e;background:linear-gradient(180deg,#f2d283,#c98c38)}.btn-primary:hover{background:linear-gradient(180deg,#ffe5a0,#d79e45)}.orb{--glow:radial-gradient(circle at 34% 27%,#fff5d2,#d6b578 30%,#75503e 61%,#251713 100%);box-shadow:0 0 0 1px rgba(226,185,105,.55),0 0 0 10px rgba(181,104,45,.1),0 0 42px 2px rgba(130,72,35,.34)}.orb-base{background:linear-gradient(90deg,transparent,#9a5a2f,#e8c165,transparent)}.meter>i,.sbar>i{background:linear-gradient(90deg,#a66a30,#ebc66e)}.question{font-family:'Cinzel',serif}.pick-row,.loselist .li{background:linear-gradient(145deg,rgba(60,38,27,.97),rgba(24,16,13,.98));border-color:#765541}.pick-row:hover{border-color:#e3bd6d}.mtg{box-shadow:0 26px 55px -23px #000,0 0 0 1px rgba(202,160,86,.3)}
+
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
@@ -386,7 +414,7 @@
 <div class="wrap">
   <header>
     <div class="sigil">🔮</div>
-    <h1 class="wordmark">Magic The Oráculo</h1>
+    <h1 class="wordmark">Magic The Mini Games</h1>
     <p class="tagline">Pensá una carta. Yo la adivino.</p>
   </header>
 

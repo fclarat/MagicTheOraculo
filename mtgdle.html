@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MTG-dle — Magic The Oráculo</title>
+<title>MTG-dle — Magic The Mini Games</title>
 <meta name="description" content="Adiviná la carta de Magic del día por sus atributos: color, coste, tipo, rareza, subtipo.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="MTG-dle — Magic The Oráculo">
+<meta property="og:title" content="MTG-dle — Magic The Mini Games">
 <meta property="og:description" content="Adiviná la carta de Magic del día por sus atributos: color, coste, tipo, rareza, subtipo.">
 <meta property="og:url" content="https://fclarat.github.io/MagicTheOraculo/mtgdle.html">
 <meta property="og:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="MTG-dle — Magic The Oráculo">
+<meta name="twitter:title" content="MTG-dle — Magic The Mini Games">
 <meta name="twitter:description" content="Adiviná la carta de Magic del día por sus atributos: color, coste, tipo, rareza, subtipo.">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A7%A9</text></svg>">
-<link rel="stylesheet" href="theme.css?v=3">
+<link rel="stylesheet" href="theme.css?v=4">
 <style>
   main { text-align:center; }
   .guessrow { position:relative; max-width:440px; margin:16px auto 0; }
@@ -82,9 +82,9 @@
 const $ = s => document.querySelector(s);
 let POOL=[], GUESSABLE=[], NAMEMAP=new Map(), TARGETS=[], target=null, tries=0, over=false, mode='daily', rows=[];
 
-// all.json = every card (typeable); games.json = the curated famous set that the
+// all.json = every card (typeable); famous.json = the curated famous set that the
 // daily ANSWER is drawn from, and the only cards with first-print year+set+subtype.
-Promise.all([fetch('data/all.json?v=4').then(r=>r.json()), fetch('data/games.json?v=4').then(r=>r.json())])
+Promise.all([fetch('data/all.json?v=4').then(r=>r.json()), fetch('data/famous.json?v=1').then(r=>r.json())])
 .then(([a,d])=>{
   POOL=d.cards;
   const rich=new Map(POOL.map(c=>[c.n,c]));
@@ -95,8 +95,8 @@ Promise.all([fetch('data/all.json?v=4').then(r=>r.json()), fetch('data/games.jso
     else { const p=(c.t||'').split('—'); c.st=p[1]?p[1].trim():''; }        // else derive subtype from the type line
   }
   NAMEMAP=new Map(GUESSABLE.map(c=>[c.n.toLowerCase(),c]));
-  TARGETS=POOL.filter(c=>c.fam && c.yr && c.set);     // daily answer stays famous & recognizable
-  if(!TARGETS.length) TARGETS=POOL.filter(c=>c.fam);
+  TARGETS=POOL.filter(c=>c.yr && c.set);     // daily answer stays famous & recognizable
+  if(!TARGETS.length) TARGETS=POOL;
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
 

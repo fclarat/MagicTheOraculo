@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cardle — Magic The Oráculo</title>
+<title>Cardle — Magic The Mini Games</title>
 <meta name="description" content="Adiviná la carta de Magic que se revela de a poco: color, tipo, coste, arte…">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Cardle — Magic The Oráculo">
+<meta property="og:title" content="Cardle — Magic The Mini Games">
 <meta property="og:description" content="Adiviná la carta de Magic que se revela de a poco: color, tipo, coste, arte…">
 <meta property="og:url" content="https://fclarat.github.io/MagicTheOraculo/cardle.html">
 <meta property="og:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Cardle — Magic The Oráculo">
+<meta name="twitter:title" content="Cardle — Magic The Mini Games">
 <meta name="twitter:description" content="Adiviná la carta de Magic que se revela de a poco: color, tipo, coste, arte…">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%8E%B4</text></svg>">
-<link rel="stylesheet" href="theme.css?v=3">
+<link rel="stylesheet" href="theme.css?v=4">
 <style>
   main { text-align:center; }
   .art-wrap { position:relative; width:min(320px,80vw); aspect-ratio:626/457; margin:14px auto 0;
@@ -89,11 +89,11 @@ const $ = s => document.querySelector(s);
 let POOL = [], NAMES = [], ALLNAMES = [], TARGETS = [], target = null, revealed = 0, used = 0, over = false, mode = 'daily';
 const MAX_TRIES = 6;
 
-Promise.all([fetch('data/all.json?v=4').then(r=>r.json()), fetch('data/games.json?v=4').then(r => r.json())]).then(([a,d]) => {
+Promise.all([fetch('data/names.json?v=1').then(r=>r.json()), fetch('data/famous.json?v=1').then(r => r.json())]).then(([a,d]) => {
   POOL = d.cards;
   NAMES = POOL.map(c => c.n);
-  ALLNAMES = a.cards.map(c => c.n);            // type ANY card, not just the famous ones
-  TARGETS = POOL.filter(c => c.fam && !c.t.includes('Land'));  // famous, non-land (art is recognizable)
+  ALLNAMES = a.names;                           // type ANY card, not just the famous ones
+  TARGETS = POOL.filter(c => !c.t.includes('Land'));  // famous, non-land (art is recognizable)
   if (!TARGETS.length) TARGETS = POOL.slice(0, 400);
   $('#loading').hidden = true; $('#game').hidden = false;
   start();

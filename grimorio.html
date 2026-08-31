@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Grimorio — Magic The Oráculo</title>
+<title>Grimorio — Magic The Mini Games</title>
 <meta name="description" content="Adiviná la carta de Magic por su ficha completa — flavor, reglas, color, coste, tipo y fuerza/resistencia — todo menos el nombre.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Grimorio — Magic The Oráculo">
+<meta property="og:title" content="Grimorio — Magic The Mini Games">
 <meta property="og:description" content="Adiviná la carta de Magic por su ficha completa — flavor, reglas, color, coste, tipo y fuerza/resistencia — todo menos el nombre.">
 <meta property="og:url" content="https://fclarat.github.io/MagicTheOraculo/grimorio.html">
 <meta property="og:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Grimorio — Magic The Oráculo">
+<meta name="twitter:title" content="Grimorio — Magic The Mini Games">
 <meta name="twitter:description" content="Adiviná la carta de Magic por su ficha completa — flavor, reglas, color, coste, tipo y fuerza/resistencia — todo menos el nombre.">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%93%96</text></svg>">
-<link rel="stylesheet" href="theme.css?v=3">
+<link rel="stylesheet" href="theme.css?v=4">
 <style>
   main { text-align:center; }
   .sub { color:var(--muted); font-size:14.5px; margin:10px auto 0; max-width:480px; }
@@ -107,8 +107,8 @@
 const $ = s => document.querySelector(s);
 let TARGETS=[], ALLNAMES=[], target=null, clues=[], revealed=1, over=false, mode='daily';
 
-Promise.all([fetch('data/all.json?v=4').then(r=>r.json()), fetch('data/reveal.json?v=1').then(r=>r.json())]).then(([a,rv])=>{
-  ALLNAMES = a.cards.map(c=>c.n);
+Promise.all([fetch('data/names.json?v=1').then(r=>r.json()), fetch('data/reveal.json?v=1').then(r=>r.json())]).then(([a,rv])=>{
+  ALLNAMES = a.names;
   TARGETS = rv.cards;
   if(!TARGETS.length){ $('#loading').textContent='No pude cargar las cartas 😿'; return; }
   $('#loading').hidden=true; $('#game').hidden=false; start();

@@ -1,55 +1,56 @@
-# 🐈‍⬛ Black Cat Magic
+# Magic The Mini Games
 
-Un oráculo de **20 preguntas** que adivina tu carta de *Magic: The Gathering*
-preguntando por sus **propiedades** (color, coste, tipo, subtipo, keywords,
-efectos…), no deletreando el nombre.
+Una colección de **8 juegos de Magic: The Gathering**. El principal, *El
+Oráculo*, adivina una carta por sus propiedades —color, coste, tipo, subtipo,
+keywords y efectos— sin hacerte deletrear su nombre.
 
-Inspirado en [TwentyQuestionsMagicTheGathering](https://jslinker.github.io/TwentyQuestionsMagicTheGathering/),
-pero con un motor distinto para que "ande mejor".
+Está inspirado en [TwentyQuestionsMagicTheGathering](https://jslinker.github.io/TwentyQuestionsMagicTheGathering/),
+pero usa un motor distinto, recuperable ante respuestas imprecisas.
 
-## Por qué anda mejor que un árbol de decisión
+## El Oráculo
 
-El proyecto original usa un **árbol de decisión precomputado**: preguntas fijas
-y, cuando quedan pocas cartas, un *tiebreaker* que te hace deletrear el nombre.
-Tiene tres problemas: si te equivocás en una respuesta se va por la rama
-equivocada y no se recupera; adivina deletreando en vez de por propiedades; y el
-orden de preguntas es rígido.
+En lugar de un árbol de decisión fijo, mantiene una creencia probabilística
+sobre más de **32.000 cartas** y elige en cada turno la pregunta con mayor
+ganancia de información.
 
-Black Cat Magic usa un **motor bayesiano con ganancia de información** (más
-parecido a Akinator):
-
-- **Creencia probabilística.** Mantiene una probabilidad sobre las 450 cartas.
-  Cada respuesta *re-pondera* (nunca elimina), así que una respuesta equivocada
-  baja una carta pero no la mata → **es recuperable**.
-- **Pregunta más informativa.** En cada paso elige la pregunta que maximiza la
-  reducción de entropía dada la creencia actual. No hay orden fijo.
-- **Respuestas difusas.** Sí / Probablemente / No sé / Probablemente no / No,
-  cada una con su verosimilitud.
-- **Por propiedades reales de Scryfall**, sin depender del Tagger privado. Los
-  empates se rompen por popularidad (EDHREC), no por el abecedario.
+- Las respuestas son difusas: Sí / Probablemente / No sé / Probablemente no / No.
+- Una respuesta equivocada baja la probabilidad de una carta, pero no la elimina.
+- Las preguntas salen de propiedades reales de Scryfall.
+- La popularidad de EDHREC solo desempata entre cartas muy parecidas.
 
 ## Estructura
 
 ```
 blackcatmagic/
-├── index.html          App standalone (GitHub Pages / doble-clic)
-├── artifact.html       Misma app, sin wrapper, para publicar como Artifact
+├── index.html          Hub de juegos; entrada de GitHub Pages
+├── oraculo.html        El Oráculo para el sitio web
+├── cardle.html …       Los otros siete juegos
+├── theme.css           Sistema visual compartido
 ├── data/
-│   └── cards.json      450 cartas + catálogo de 57 features (generado)
+│   ├── cards.json      Oráculo: cartas + catálogo de features
+│   ├── all.json        Datos completos para MTG-dle
+│   ├── names.json      Índice liviano de nombres para autocompletar
+│   ├── famous.json     Pool curado de respuestas diarias
+│   ├── reveal.json     Pistas del Grimorio
+│   └── years.json      Año y primera impresión para Timeline
 └── scripts/
-    ├── build_data.py   Baja cartas de Scryfall y deriva el feature vector
-    ├── app.html        Fuente única de la app (con placeholder __DATA__)
-    └── build_site.py   Inyecta los datos y genera index.html + artifact.html
+    ├── build.py        Pipeline completo, en el orden correcto
+    ├── build_data.py   Baja cartas de Scryfall y deriva los features
+    ├── app.html        Fuente única del Oráculo
+    └── build_site.py   Genera oraculo.html + artifact.html
 ```
 
 ## Regenerar / buildear
 
-Requiere Python 3 (solo stdlib, sin dependencias).
+Requiere Python 3 y no tiene dependencias externas.
 
 ```bash
-python scripts/build_data.py     # baja el dataset de Scryfall -> data/cards.json
-python scripts/build_site.py     # arma index.html + artifact.html
+python scripts/build.py
 ```
+
+El pipeline reconstruye todos los datasets derivados, completa las primeras
+impresiones que falten, genera el Oráculo y aplica los metadatos de enlaces. Los
+scripts individuales siguen siendo útiles para iterar una parte concreta.
 
 ## Correr localmente
 
@@ -57,8 +58,12 @@ python scripts/build_site.py     # arma index.html + artifact.html
 python -m http.server 8765
 ```
 
-Y abrí <http://localhost:8765/index.html>. (También funciona con doble-clic en
-`index.html`, porque los datos van embebidos.)
+Abrí <http://localhost:8765/index.html>.
+
+El Oráculo conserva sus datos embebidos y puede abrirse solo como
+`oraculo.html`. Los demás juegos cargan JSON con `fetch`, por lo que deben
+servirse por HTTP: no funcionan correctamente al abrirlos con `file://` por
+doble clic.
 
 ## Deploy a GitHub Pages
 
@@ -67,11 +72,10 @@ Subí el repo a GitHub y activá Pages sobre la rama `main` / carpeta raíz.
 
 ## Roadmap
 
-- [ ] Arte real de las cartas (la versión GitHub Pages puede cargar imágenes del
-      CDN de Scryfall; el Artifact no, por CSP).
+- [x] Arte real de las cartas desde el CDN de Scryfall en la versión web.
 - [ ] Comprimir las preguntas de color (hoy pregunta color por color).
-- [ ] Modo "adiviná vos": el juego piensa una carta y vos preguntás.
-- [ ] Más cartas / elegir el pool (Commander, Standard, Vintage…).
+- [ ] Modo “adiviná vos”: el juego piensa una carta y vos preguntás.
+- [ ] Más pools elegibles (Commander, Standard, Vintage…).
 
 ## Créditos
 

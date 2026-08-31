@@ -1,4 +1,4 @@
-/* Shared "mental reward" layer for the Magic The Oráculo mini-games:
+/* Shared "mental reward" layer for the Magic The Mini Games:
    per-device stats (localStorage), a celebration modal with a win/loss card,
    a streak + win-rate + guess-distribution block, share-to-clipboard, confetti. */
 window.MTO = (function () {

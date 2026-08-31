@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Build data/all.json — the FULL set of Magic cards (~32k) trimmed to just the
-fields the mini-games need to let you TYPE/guess any card:
+fields MTG-dle needs to let you TYPE/guess any card. Also writes names.json,
+the much smaller autocomplete-only list used by the other guessing games:
 
     n  name        co color       cmc mana value   mc mana cost
     t  type line   r  rarity      id  scryfall id  rk popularity rank
@@ -19,6 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = json.loads((ROOT / "data" / "cards.json").read_text(encoding="utf-8"))
 CARDS = SRC["cards"] if isinstance(SRC, dict) else SRC
 OUT = ROOT / "data" / "all.json"
+NAMES_OUT = ROOT / "data" / "names.json"
 
 # co/cmc/t/r power MTG-dle's guess comparison; n is the autocomplete list.
 # mc/id/rk aren't needed for typing (guessed cards show no image), so drop them
@@ -39,5 +41,9 @@ for c in CARDS:
 rows.sort(key=lambda pair: pair[0])
 rows = [r for _, r in rows]
 OUT.write_text(json.dumps({"cards": rows}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+NAMES_OUT.write_text(json.dumps({"names": [r["n"] for r in rows]}, ensure_ascii=False,
+                          separators=(",", ":")), encoding="utf-8")
 kb = OUT.stat().st_size / 1024
+names_kb = NAMES_OUT.stat().st_size / 1024
 print(f"Wrote {len(rows)} cards -> {OUT} ({kb:.0f} KB)")
+print(f"Wrote {len(rows)} names -> {NAMES_OUT} ({names_kb:.0f} KB)")

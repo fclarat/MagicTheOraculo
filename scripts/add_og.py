@@ -28,7 +28,7 @@ for fn in FILES:
         continue
     tm = re.search(r"<title>(.*?)</title>", html, re.S)
     dm = re.search(r'<meta\s+name="description"\s+content="(.*?)"\s*/?>', html, re.S)
-    title = tm.group(1).strip() if tm else "Magic The Oráculo"
+    title = tm.group(1).strip() if tm else "Magic The Mini Games"
     desc = dm.group(1).strip() if dm else "Juegos de Magic: The Gathering para adivinar cartas."
     url = BASE + ("" if fn == "index.html" else fn)
     block = "\n".join([

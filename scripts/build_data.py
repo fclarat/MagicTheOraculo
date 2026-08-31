@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build the FULL card dataset for Black Cat Magic from Scryfall's `oracle_cards`
+Build the FULL card dataset for Magic The Mini Games from Scryfall's `oracle_cards`
 bulk (one entry per Oracle id: every real Magic card, ~28k).
 
 Every feature is derived straight from official Scryfall fields -- structural
@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "cards.json"
 GZ = ROOT / "data" / "oracle-cards.jsonl.gz"
-UA = "blackcatmagic/0.2 (personal hobby project)"
+UA = "magic-the-mini-games/1.0 (personal hobby project)"
 
 
 # --------------------------------------------------------------------------- #

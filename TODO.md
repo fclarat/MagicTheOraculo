@@ -1,4 +1,4 @@
-# TODO / Ideas — Magic The Oráculo
+# TODO / Ideas — Magic The Mini Games
 
 ## ⏸️ Base de datos compartida (parqueado — esperando config de Firebase)
 

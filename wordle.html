@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wordle MTG — Magic The Oráculo</title>
+<title>Wordle MTG — Magic The Mini Games</title>
 <meta name="description" content="Adiviná el nombre de una carta de Magic, letra por letra, estilo Wordle.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Wordle MTG — Magic The Oráculo">
+<meta property="og:title" content="Wordle MTG — Magic The Mini Games">
 <meta property="og:description" content="Adiviná el nombre de una carta de Magic, letra por letra, estilo Wordle.">
 <meta property="og:url" content="https://fclarat.github.io/MagicTheOraculo/wordle.html">
 <meta property="og:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Wordle MTG — Magic The Oráculo">
+<meta name="twitter:title" content="Wordle MTG — Magic The Mini Games">
 <meta name="twitter:description" content="Adiviná el nombre de una carta de Magic, letra por letra, estilo Wordle.">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%A4</text></svg>">
-<link rel="stylesheet" href="theme.css?v=3">
+<link rel="stylesheet" href="theme.css?v=4">
 <style>
   main { text-align:center; }
   .hint { color:var(--muted); font-size:14.5px; margin:14px auto 0; max-width:460px; }
@@ -80,9 +80,9 @@ let POOL=[], WORDS=[], target=null, L=0, row=0, col=0, grid=[], over=false, mode
 const ROWS=6;
 const keyState={};
 
-fetch('data/games.json?v=4').then(r=>r.json()).then(d=>{
+fetch('data/famous.json?v=1').then(r=>r.json()).then(d=>{
   POOL=d.cards;
-  WORDS = POOL.filter(c=>c.fam && /^[A-Za-z]{4,9}$/.test(c.n));   // famous single-word names
+  WORDS = POOL.filter(c=>/^[A-Za-z]{4,9}$/.test(c.n));   // famous single-word names
   if(!WORDS.length) WORDS = POOL.filter(c=>/^[A-Za-z]{4,9}$/.test(c.n)).slice(0,120);
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
