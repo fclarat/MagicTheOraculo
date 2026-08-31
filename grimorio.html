@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grimorio — Magic The Oráculo</title>
+<meta name="description" content="Adiviná la carta de Magic por su ficha completa — flavor, reglas, color, coste, tipo y fuerza/resistencia — todo menos el nombre.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Grimorio — Magic The Oráculo">
+<meta property="og:description" content="Adiviná la carta de Magic por su ficha completa — flavor, reglas, color, coste, tipo y fuerza/resistencia — todo menos el nombre.">
+<meta property="og:url" content="https://fclarat.github.io/MagicTheOraculo/grimorio.html">
+<meta property="og:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Grimorio — Magic The Oráculo">
+<meta name="twitter:description" content="Adiviná la carta de Magic por su ficha completa — flavor, reglas, color, coste, tipo y fuerza/resistencia — todo menos el nombre.">
+<meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%93%96</text></svg>">
+<link rel="stylesheet" href="theme.css?v=3">
+<style>
+  main { text-align:center; }
+  .sub { color:var(--muted); font-size:14.5px; margin:10px auto 0; max-width:480px; }
+  .clues { max-width:560px; margin:16px auto 0; display:flex; flex-direction:column; gap:10px; text-align:left; }
+  .clue { background:linear-gradient(180deg,var(--ink-2),var(--ink)); border:1px solid var(--smoke-2);
+    border-radius:12px; padding:12px 15px; box-shadow:inset 0 0 0 1px var(--hair); animation:cluein .35s ease both; }
+  @keyframes cluein { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+  .clue .lab { display:block; font-family:'Jost',sans-serif; text-transform:uppercase; letter-spacing:.14em;
+    font-size:10.5px; font-weight:600; color:var(--faint); margin-bottom:5px; }
+  .clue .val { font-size:15px; line-height:1.5; color:var(--parchment); }
+  .clue .flav { font-style:italic; font-family:'Spectral',serif; color:#d8cdb0; }
+  .clue .rules { white-space:pre-wrap; font-family:'Spectral',serif; }
+  .clue.pending { border-style:dashed; opacity:.5; text-align:center; color:var(--faint); font-family:'Jost',sans-serif; font-size:13px; }
+  .mana { margin-right:3px; }
+  .mana.n { background:radial-gradient(circle at 38% 30%,#efe9dd,#b0a794 82%); color:#3a3527; }
+  .guessrow { position:relative; max-width:480px; margin:18px auto 0; }
+  #guess { width:100%; box-sizing:border-box; background:var(--ink-2); color:var(--parchment);
+    border:1px solid var(--smoke-2); border-radius:12px; padding:13px 15px; font-family:'Spectral',serif; font-size:16px; text-align:center; }
+  #guess:focus { outline:2px solid var(--gold); outline-offset:1px; }
+  .sugg { position:absolute; left:0; right:0; top:52px; z-index:5; display:grid; gap:3px; background:var(--void); border-radius:10px; }
+  .sugg button { text-align:left; background:var(--ink); color:var(--parchment); border:1px solid var(--smoke);
+    border-radius:8px; padding:9px 12px; cursor:pointer; font-family:'Spectral',serif; font-size:14px; }
+  .sugg button:hover { border-color:var(--gold); }
+  .controls { display:flex; gap:10px; justify-content:center; align-items:center; margin:14px auto 0; flex-wrap:wrap; }
+  .count { color:var(--faint); font-family:'Jost',sans-serif; font-size:12.5px; letter-spacing:.04em; }
+  .msg { min-height:20px; color:var(--gold); font-family:'Jost',sans-serif; font-size:14px; margin:12px 0 0; }
+  .guesslog { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:12px auto 0; max-width:520px; }
+  .guesslog .gl { font-family:'Jost',sans-serif; font-size:12px; color:var(--muted); background:var(--ink);
+    border:1px solid var(--smoke); border-radius:8px; padding:4px 9px; text-decoration:line-through; }
+  .cardwrap { display:flex; justify-content:center; margin:14px 0; }
+  .cardwrap img { width:min(260px,70vw); border-radius:12px; box-shadow:var(--shadow); }
+  .foot { color:var(--faint); text-align:center; font-family:'Jost',sans-serif; font-size:13px; margin-top:24px; }
+  .modepick { display:inline-flex; border:1px solid var(--smoke-2); border-radius:99px; overflow:hidden; margin-top:6px; }
+  .modepick button { background:transparent; border:none; color:var(--muted); padding:7px 16px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13px; }
+  .modepick button.on { background:var(--gold); color:#241a06; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="back" href="index.html">‹ Volver al hub</a>
+  </div>
+  <header class="mast">
+    <div class="sigil">📖</div>
+    <h1 class="wordmark">Grimorio</h1>
+    <p class="tagline">Adiviná la carta por su ficha… todo menos el nombre</p>
+    <div class="modepick" id="modepick"><button data-mode="daily" class="on">Del día</button><button data-mode="rand">Infinito</button></div>
+  </header>
+  <main>
+    <div id="game" hidden>
+      <p class="sub">Empezás con una sola pista. Cada intento fallido (o “Otra pista”) revela una más — <b>ganás con menos pistas</b>.</p>
+      <div class="clues" id="clues"></div>
+      <div class="guessrow">
+        <input id="guess" type="text" autocomplete="off" spellcheck="false" placeholder="Escribí el nombre de la carta…">
+        <div class="sugg" id="sugg"></div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="next">Otra pista ↓</button>
+        <span class="count" id="count"></span>
+      </div>
+      <p class="msg" id="msg"></p>
+      <div class="guesslog" id="guesslog"></div>
+    </div>
+    <div id="result" hidden></div>
+    <p class="foot" id="loading">Abriendo el grimorio…</p>
+  </main>
+</div>
+<script src="extras.js?v=3"></script>
+<script>
+const $ = s => document.querySelector(s);
+let TARGETS=[], ALLNAMES=[], target=null, clues=[], revealed=1, over=false, mode='daily';
+
+Promise.all([fetch('data/all.json?v=4').then(r=>r.json()), fetch('data/reveal.json?v=1').then(r=>r.json())]).then(([a,rv])=>{
+  ALLNAMES = a.cards.map(c=>c.n);
+  TARGETS = rv.cards;
+  if(!TARGETS.length){ $('#loading').textContent='No pude cargar las cartas 😿'; return; }
+  $('#loading').hidden=true; $('#game').hidden=false; start();
+}).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
+
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function todayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+function imgURL(c,k){ const id=c.fid; return `https://cards.scryfall.io/${k}/front/${id[0]}/${id[1]}/${id}.jpg`; }
+function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+const COLNAME={W:'Blanca',U:'Azul',B:'Negra',R:'Roja',G:'Verde'};
+function colorPips(co){ if(!co) return `<span class="mana c">◆</span>`; return co.split('').map(x=>`<span class="mana ${x.toLowerCase()}">${x}</span>`).join(''); }
+function colorWord(co){ if(!co) return 'Incolora'; if(co.length>=2) return 'Multicolor'; return COLNAME[co]||co; }
+function manaHTML(mc){
+  const syms = (mc||'').match(/\{[^}]+\}/g);
+  if(!syms||!syms.length) return `<span class="mana n">0</span>`;
+  return syms.map(s=>{ const t=s.slice(1,-1); const cls={W:'w',U:'u',B:'b',R:'r',G:'g',C:'c'}[t];
+    return cls ? `<span class="mana ${cls}">${t}</span>` : `<span class="mana n">${esc(t)}</span>`; }).join('');
+}
+function buildClues(c){
+  const cl=[];
+  if(c.fl) cl.push({lab:'Frase (flavor)', html:`<span class="flav">“${esc(c.fl)}”</span>`});
+  cl.push({lab:'Texto de reglas', html:`<span class="rules">${esc(c.ot)}</span>`});
+  cl.push({lab:'Color', html:`${colorPips(c.co)} &nbsp;${colorWord(c.co)}`});
+  cl.push({lab:'Coste de maná', html: manaHTML(c.mc)});
+  cl.push({lab:'Tipo', html: esc(c.t)});
+  if(c.pt) cl.push({lab:'Fuerza / Resistencia', html:`<b>${esc(c.pt)}</b>`});
+  return cl;
+}
+
+function start(){
+  over=false; revealed=1;
+  const seed = mode==='daily' ? hashStr('grimorio'+todayKey()) : Math.floor(Math.random()*1e9);
+  target = TARGETS[seed % TARGETS.length];
+  clues = buildClues(target);
+  $('#result').hidden=true; $('#game').hidden=false; $('#msg').textContent=''; $('#guesslog').innerHTML='';
+  $('#guess').value=''; $('#guess').disabled=false; $('#sugg').innerHTML='';
+  render(); $('#guess').focus();
+}
+function render(){
+  let html = clues.slice(0, revealed).map(c=>`<div class="clue"><span class="lab">${c.lab}</span><div class="val">${c.html}</div></div>`).join('');
+  if(revealed < clues.length) html += `<div class="clue pending">🔒 ${clues.length-revealed} pista${clues.length-revealed>1?'s':''} más — probá o pedí “Otra pista”.</div>`;
+  $('#clues').innerHTML = html;
+  $('#count').textContent = `Pista ${Math.min(revealed,clues.length)} de ${clues.length}`;
+  $('#next').disabled = revealed >= clues.length;
+}
+function nextClue(){ if(over) return; if(revealed < clues.length){ revealed++; render(); } }
+
+$('#guess').addEventListener('input', e=>{
+  const q=e.target.value.trim().toLowerCase(), box=$('#sugg');
+  if(q.length<2){ box.innerHTML=''; return; }
+  const hits=[]; for(let i=0;i<ALLNAMES.length && hits.length<7;i++) if(ALLNAMES[i].toLowerCase().includes(q)) hits.push(ALLNAMES[i]);
+  box.innerHTML=hits.map(n=>`<button data-n="${esc(n)}">${esc(n)}</button>`).join('');
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>submit(b.dataset.n));
+});
+$('#guess').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const f=$('#sugg button'); if(f) submit(f.dataset.n); else submit($('#guess').value.trim()); }});
+$('#next').onclick=nextClue;
+
+function submit(name){
+  if(over||!name) return; $('#sugg').innerHTML=''; $('#guess').value='';
+  if(name.toLowerCase()===target.n.toLowerCase()) return win();
+  $('#guesslog').insertAdjacentHTML('beforeend', `<span class="gl">${esc(name)}</span>`);
+  if(revealed < clues.length){ revealed++; render(); $('#msg').textContent='No era… ahí va otra pista.'; }
+  else { $('#msg').textContent=''; return lose(); }
+}
+function win(){ done(true); }
+function lose(){ done(false); }
+function done(won){
+  over=true; $('#guess').disabled=true; $('#next').disabled=true;
+  const n = revealed;
+  setTimeout(()=>{
+    MTO.end('grimorio', { won, mode, score: won?n:null, distLabel:'pistas usadas',
+      title: target.n, subtitle: won?`Adivinada con ${n} pista${n>1?'s':''}`:'No la sacaste',
+      bodyHtml: `<div class="cardwrap"><img src="${imgURL(target,'normal')}" alt="${esc(target.n)}" onerror="this.onerror=null;this.src='${imgURL(target,'art_crop')}'"></div>`,
+      shareText: `Grimorio 📖 — ${won?`✅ con ${n} pista${n>1?'s':''}`:'❌ no la saqué'}\nfclarat.github.io/MagicTheOraculo` });
+  }, 350);
+}
+document.querySelectorAll('#modepick button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#modepick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); mode=b.dataset.mode; if(TARGETS.length) start(); });
+</script>
+</body>
+</html>

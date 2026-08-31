@@ -4,7 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Magic The Oráculo — Juegos</title>
-<meta name="description" content="7 juegos de Magic: The Gathering — adiviná cartas por preguntas, por su arte, por atributos, por año o agrupándolas.">
+<meta name="description" content="8 juegos de Magic: The Gathering — adiviná cartas por preguntas, por su arte, por su ficha, por atributos, por año o agrupándolas.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Magic The Oráculo — Juegos">
+<meta property="og:description" content="8 juegos de Magic: The Gathering — adiviná cartas por preguntas, por su arte, por su ficha, por atributos, por año o agrupándolas.">
+<meta property="og:url" content="https://fclarat.github.io/MagicTheOraculo/">
+<meta property="og:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Magic The Oráculo — Juegos">
+<meta name="twitter:description" content="8 juegos de Magic: The Gathering — adiviná cartas por preguntas, por su arte, por su ficha, por atributos, por año o agrupándolas.">
+<meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%AE</text></svg>">
 <link rel="stylesheet" href="theme.css?v=3">
 <style>
@@ -83,6 +94,18 @@
   .m-tl div .a { height:40px; background:linear-gradient(150deg,#3a2f5c,#6a4a7e) }
   .m-tl div .y { font-family:'Jost',sans-serif; font-weight:700; font-size:12px; color:var(--gold); padding:5px 0 }
   .m-axis { margin-top:8px; text-align:center; color:var(--faint); font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.06em; }
+  .m-grim { display:flex; flex-direction:column; gap:6px; }
+  .m-grim .gr { background:var(--ink); border:1px solid var(--smoke-2); border-radius:8px; padding:6px 8px; font-size:11px; color:var(--muted); text-align:left; line-height:1.3; }
+  .m-grim .gr .grl { display:block; font-family:'Jost',sans-serif; text-transform:uppercase; letter-spacing:.12em; font-size:8px; color:var(--faint); margin-bottom:2px; }
+  .m-grim .gr i { color:#d8cdb0; }
+  .m-grim .gr.lock { text-align:center; border-style:dashed; color:var(--faint); font-size:10px; }
+  .mana.ub { background:linear-gradient(135deg,#2b7dbf 0 50%,#564d6c 50% 100%); color:#eef; }
+  .streakwrap { text-align:center; }
+  .streakchip { display:inline-flex; align-items:center; gap:8px; margin:0 auto 14px; padding:7px 16px;
+    background:linear-gradient(180deg,var(--ink-2),var(--ink)); border:1px solid var(--smoke-2);
+    border-radius:99px; box-shadow:inset 0 0 0 1px var(--hair); font-family:'Jost',sans-serif; font-size:13px; color:var(--muted); }
+  .streakchip b { color:var(--gold); font-variant-numeric:tabular-nums; }
+  .streakchip .fire { font-size:15px; filter:drop-shadow(0 0 6px rgba(227,180,90,.5)); }
 </style>
 </head>
 <body>
@@ -90,13 +113,14 @@
   <header class="mast">
     <div class="sigil">🔮</div>
     <h1 class="wordmark">Magic The Oráculo</h1>
-    <p class="tagline">7 formas de adivinar cartas de Magic</p>
+    <p class="tagline">8 formas de adivinar cartas de Magic</p>
     <div class="manabar" style="margin-top:12px">
       <span class="mana w">W</span><span class="mana u">U</span><span class="mana b">B</span><span class="mana r">R</span><span class="mana g">G</span>
     </div>
   </header>
   <p class="intro">Elegí un juego. Todos usan las cartas reales de Scryfall, con modo del día e infinito.</p>
   <div class="rule"><i>◆</i></div>
+  <div class="streakwrap"><span id="streak" class="streakchip" hidden></span></div>
 
   <div class="bars">
     <a class="bar" href="oraculo.html" style="--acc:rgba(155,120,220,.34)">
@@ -111,6 +135,16 @@
       <div class="pvwrap"><div class="pv"><div class="m-art blur"></div>
         <div class="m-chips"><span>🎨 Verde</span><span>💎 3</span><span>🃏 Criatura</span></div></div></div>
       <div class="binfo"><h2 class="bt">Cardle</h2><p class="bd">La carta se revela de a poco: color, tipo, coste, el arte…</p><span class="bgo">Jugar ›</span></div>
+    </a>
+
+    <a class="bar" href="grimorio.html" style="--acc:rgba(80,120,190,.30)">
+      <span class="mana ub" title="secretos">◆</span>
+      <div class="pvwrap"><div class="pv"><div class="m-grim">
+        <div class="gr"><span class="grl">flavor</span><i>“…una cita evocadora…”</i></div>
+        <div class="gr"><span class="grl">reglas</span>▮▮▮ inflige 3 de daño…</div>
+        <div class="gr lock">🔒 4 pistas más</div>
+      </div></div></div>
+      <div class="binfo"><h2 class="bt">Grimorio</h2><p class="bd">Adiviná la carta por su ficha entera: flavor, reglas, coste, tipo… todo menos el nombre.</p><span class="bgo">Jugar ›</span></div>
     </a>
 
     <a class="bar" href="zoom.html" style="--acc:rgba(47,146,214,.28)">
@@ -159,6 +193,21 @@
   const cells=[]; for(let g=0;g<4;g++) for(let k=0;k<4;k++) cells.push(g);
   for(let i=cells.length-1;i>0;i--){ const j=(i*7+3)%(i+1); [cells[i],cells[j]]=[cells[j],cells[i]]; }
   document.getElementById('mconn').innerHTML = cells.map(g=>`<i style="background:${GC[g]}"></i>`).join('');
+
+  // global streak chip (reads the shared mto_global written by the games)
+  (function(){
+    let g; try{ g=JSON.parse(localStorage.getItem('mto_global')); }catch(e){}
+    if(!g) return;
+    const ymd=d=>d.toISOString().slice(0,10);
+    const today=ymd(new Date()), yest=ymd(new Date(Date.now()-864e5));
+    let streak=g.streak||0;
+    if(g.last!==today && g.last!==yest) streak=0;                 // streak broken
+    const playedToday=(g.todayDate===today)?(g.todayGames||[]).length:0;
+    if(streak<=0 && playedToday===0) return;                      // nothing yet
+    const el=document.getElementById('streak');
+    el.innerHTML = `<span class="fire">🔥</span> Racha <b>${streak}</b> día${streak===1?'':'s'} · hoy <b>${playedToday}</b>/8`;
+    el.hidden=false;
+  })();
 </script>
 </body>
 </html>

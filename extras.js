@@ -17,8 +17,25 @@ window.MTO = (function () {
       if (won) { s.cur = s.lastWin === today ? s.cur : (s.lastWin === yest ? s.cur + 1 : 1); s.lastWin = today; if (s.cur > s.max) s.max = s.cur; }
       else s.cur = 0;
     }
-    save(g, s); return s;
+    save(g, s); recordGlobal(g); return s;
   }
+
+  // global cross-game streak: consecutive days you played ANY game (+ today's set)
+  function recordGlobal(game) {
+    const K = 'mto_global';
+    let x; try { x = JSON.parse(localStorage.getItem(K)); } catch (e) {}
+    if (!x || typeof x !== 'object') x = { streak: 0, best: 0, last: null, todayDate: null, todayGames: [] };
+    const today = ymd(new Date()), yest = ymd(new Date(Date.now() - 864e5));
+    if (x.todayDate !== today) {
+      x.streak = (x.last === yest) ? (x.streak || 0) + 1 : 1;
+      x.last = today; x.todayDate = today; x.todayGames = [];
+      if (x.streak > (x.best || 0)) x.best = x.streak;
+    }
+    if (x.todayGames.indexOf(game) < 0) x.todayGames.push(game);
+    try { localStorage.setItem(K, JSON.stringify(x)); } catch (e) {}
+    return x;
+  }
+  function globalStats() { try { return JSON.parse(localStorage.getItem('mto_global')) || null; } catch (e) { return null; } }
 
   function statsHtml(s, distLabel) {
     const pct = s.played ? Math.round(100 * s.won / s.played) : 0;
@@ -92,7 +109,7 @@ window.MTO = (function () {
     return s;
   }
 
-  return { end, stats, record, statsHtml };
+  return { end, stats, record, statsHtml, global: globalStats };
 })();
 
 /* colorblind-safe palette (shared + persisted): swaps green/gold for orange/blue.
