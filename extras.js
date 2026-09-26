@@ -3,17 +3,27 @@
    a streak + win-rate + guess-distribution block, share-to-clipboard, confetti. */
 window.MTO = (function () {
   const esc = s => String(s).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
-  // card format shared by every game: 'all' or 'pm' (Premodern). A ?f=pm / ?f=all
-  // link sets it too, so a shared link opens in the same format.
+  // card format shared by every game: 'all' or one of FORMATS. A ?f=<code> link
+  // sets it too, so a shared link opens in the same format. Bits match each
+  // card's "fm" mask (scripts/build_data.py FORMAT_BITS).
+  const FORMATS = {
+    modern: { bit: 2, label: 'Modern', title: 'Cartas legales en Modern (8th Edition en adelante)' },
+    pauper: { bit: 4, label: 'Pauper', title: 'Cartas con alguna impresión común' },
+    legacy: { bit: 8, label: 'Legacy', title: 'Cartas legales en Legacy (casi todas)' },
+    premodern: { bit: 1, label: 'Premodern', title: 'Cartas de 4th Edition a Scourge (1995–2003)' },
+  };
+  const norm = f => (f === 'pm' ? 'premodern' : f);   // 'pm' links came first
   const fmt = (function () {
     let f = null;
-    try { f = new URLSearchParams(location.search).get('f'); } catch (e) {}
-    if (f === 'pm' || f === 'all') { try { localStorage.setItem('mto_fmt', f); } catch (e) {} return f; }
-    try { return localStorage.getItem('mto_fmt') === 'pm' ? 'pm' : 'all'; } catch (e) { return 'all'; }
+    try { f = norm(new URLSearchParams(location.search).get('f')); } catch (e) {}
+    if (f === 'all' || FORMATS[f]) { try { localStorage.setItem('mto_fmt', f); } catch (e) {} return f; }
+    try { f = norm(localStorage.getItem('mto_fmt')); } catch (e) {}
+    return FORMATS[f] ? f : 'all';
   })();
-  const pm = fmt === 'pm';
-  // Premodern keeps its own stats and streaks: its answers come from another pool
-  const key = g => 'mto_stats_' + g + (pm ? '_pm' : '');
+  const F = FORMATS[fmt] || null, bit = F ? F.bit : 0;
+  const inFmt = mask => !bit || ((mask || 0) & bit) !== 0;
+  // each format keeps its own stats and streaks: its answers come from another pool
+  const key = g => 'mto_stats_' + g + (F ? '_' + (fmt === 'premodern' ? 'pm' : fmt) : '');
   const blank = () => ({ played: 0, won: 0, cur: 0, max: 0, lastWin: null, dist: {} });
   function stats(g) { try { const s = JSON.parse(localStorage.getItem(key(g))); if (s && typeof s.played === 'number') return Object.assign(blank(), s); } catch (e) {} return blank(); }
   function save(g, s) { try { localStorage.setItem(key(g), JSON.stringify(s)); } catch (e) {} }
@@ -92,7 +102,7 @@ window.MTO = (function () {
 
   function end(g, o) {
     const s = record(g, { won: o.won, mode: o.mode, score: o.score });
-    if (pm && o.shareText) o.shareText = o.shareText.replace('\n', ' · Premodern\n');
+    if (F && o.shareText) o.shareText = o.shareText.replace('\n', ' · ' + F.label + '\n');
     let m = document.getElementById('mto-modal');
     if (!m) { m = document.createElement('div'); m.id = 'mto-modal'; m.className = 'mto-modal'; document.body.appendChild(m); }
     m.innerHTML = `<div class="mto-panel" role="dialog" aria-modal="true">
@@ -120,7 +130,7 @@ window.MTO = (function () {
     return s;
   }
 
-  // "Cartas: Todas / Premodern" row under the game's #modepick (or into #fmtslot).
+  // "Cartas: Todas / Modern / …" row under the game's #modepick (or into #fmtslot).
   // Switching reloads, since each format downloads a different card pool.
   function fmtPick() {
     let slot = document.getElementById('fmtslot');
@@ -134,8 +144,10 @@ window.MTO = (function () {
     const el = document.createElement('div');
     el.className = 'fmtpick'; el.id = 'fmtpick';
     el.setAttribute('role', 'group'); el.setAttribute('aria-label', 'Formato de cartas');
-    el.innerHTML = `<button data-f="all"${pm ? '' : ' class="on"'} title="Todas las cartas de Magic">Todas</button>` +
-      `<button data-f="pm"${pm ? ' class="on"' : ''} title="Cartas de 4th Edition a Scourge (1995–2003)">Premodern</button>`;
+    const opts = [['all', 'Todas', 'Todas las cartas de Magic']].concat(
+      Object.keys(FORMATS).map(k => [k, FORMATS[k].label, FORMATS[k].title]));
+    el.innerHTML = opts.map(([k, label, title]) =>
+      `<button data-f="${k}"${k === fmt ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"'} title="${esc(title)}">${label}</button>`).join('');
     slot.appendChild(el);
     el.querySelectorAll('button').forEach(b => b.onclick = () => {
       if (b.dataset.f === fmt) return;
@@ -146,8 +158,14 @@ window.MTO = (function () {
   if (document.readyState !== 'loading') fmtPick();
   else document.addEventListener('DOMContentLoaded', fmtPick);
 
-  return { end, stats, record, statsHtml, global: globalStats, fmt, pm,
-    famousURL: pm ? 'data/famous_pm.json?v=1' : 'data/famous.json?v=1' };
+  // autocomplete list of the format, from names.json ({names, fm: one hex mask digit per name})
+  function names(d) {
+    if (!bit || !d.fm) return d.names;
+    return d.names.filter((n, i) => (parseInt(d.fm[i], 16) & bit) !== 0);
+  }
+
+  return { end, stats, record, statsHtml, global: globalStats, FORMATS, fmt, bit, inFmt, names,
+    famousURL: F ? `data/famous_${fmt}.json?v=1` : 'data/famous.json?v=1' };
 })();
 
 /* colorblind-safe palette (shared + persisted): swaps green/gold for orange/blue.

@@ -2,8 +2,8 @@
 """
 Build data/games.json: a lean, popularity-ranked subset of the cards for the
 mini-games. It also writes famous.json, the ~600-card answer pool used by every
-game except MTG-dle, and famous_pm.json, the same idea restricted to the
-Premodern format. Only the fields the games need are retained.
+game except MTG-dle, and famous_<format>.json, the same idea restricted to
+each format a player can pick (Modern, Pauper, Legacy, Premodern). Only the fields the games need are retained.
 
     python scripts/build_games_data.py
 """
@@ -33,9 +33,11 @@ FAMOUS = {
     "Sheoldred, the Apocalypse", "Ugin, the Spirit Dragon", "Karn Liberated",
     "Emrakul, the Promised End", "Nicol Bolas, God-Pharaoh", "Atraxa, Praetors' Voice",
 }
-# Premodern answer pool: the most popular Premodern cards plus the era's icons,
-# which EDHREC (a Commander site) underrates.
-PM_N = 400
+# Per-format answer pools: the format's most popular cards plus the famous
+# cards above that belong to it. Premodern also gets the era's icons, which
+# EDHREC (a Commander site) underrates. Bits match build_data.FORMAT_BITS.
+FORMAT_BITS = {"premodern": 1, "modern": 2, "pauper": 4, "legacy": 8}
+FMT_N = 400
 PM_FAMOUS = {
     "Psychatog", "Goblin Lackey", "Survival of the Fittest", "Replenish", "Opposition",
     "Stroke of Genius", "Tinker", "Yawgmoth's Will", "Mind Twist", "Necropotence",
@@ -56,19 +58,23 @@ PM_FAMOUS = {
 ranked = sorted((c for c in cards if c.get("id") and "//" not in c["n"]),
                 key=lambda c: c["rk"] if c.get("rk") is not None else 10 ** 9)
 
-pm_rank = [c for c in ranked if c.get("pm")]
-PMF = {c["n"] for c in pm_rank[:PM_N]} | {c["n"] for c in pm_rank if c["n"] in PM_FAMOUS}
+FF = {}   # name -> mask of the formats whose answer pool includes it
+for fmt, b in FORMAT_BITS.items():
+    fr = [c for c in ranked if c.get("fm", 0) & b]
+    icons = FAMOUS | (PM_FAMOUS if fmt == "premodern" else set())
+    for c in fr[:FMT_N] + [c for c in fr if c["n"] in icons]:
+        FF[c["n"]] = FF.get(c["n"], 0) | b
 
-# keep every Premodern answer even if it falls outside the top-N popularity cut
+# keep every format answer even if it falls outside the top-N popularity cut
 top = ranked[:N]
 top_names = {c["n"] for c in top}
-top += [c for c in ranked[N:] if c["n"] in PMF and c["n"] not in top_names]
+top += [c for c in ranked[N:] if c["n"] in FF and c["n"] not in top_names]
 
 out = []
 for c in top:
     tl = c["t"]
     st = tl.split("—", 1)[1].strip() if "—" in tl else ""
-    # cards appended only for the Premodern pool must not change the default one
+    # cards appended only for a format pool must not change the default one
     fam = 1 if c["n"] in top_names and ((c.get("rk") is not None and c["rk"] <= FAME_RANK)
                                         or c["n"] in FAMOUS) else 0
     out.append({
@@ -76,10 +82,10 @@ for c in top:
         "r": c["r"], "rk": c.get("rk"), "id": c["id"],
         "pt": c.get("pt"), "st": st, "fam": fam,
     })
-    if c.get("pm"):
-        out[-1]["pm"] = 1
-    if c["n"] in PMF:
-        out[-1]["pmf"] = 1
+    if c.get("fm"):
+        out[-1]["fm"] = c["fm"]
+    if c["n"] in FF:
+        out[-1]["ff"] = FF[c["n"]]
 
 # merge first-print data (from build_years.py) so games can show the ORIGINAL,
 # recognizable art instead of a random recent reprint. fid = first-print card id.
@@ -114,12 +120,12 @@ famous_dest.write_text(json.dumps({"cards": famous}, ensure_ascii=False,
 famous_kb = famous_dest.stat().st_size / 1024
 print(f"Wrote {len(famous)} famous cards -> {famous_dest} ({famous_kb:.0f} KB)")
 
-pm_famous = [c for c in out if c.get("pmf")]
-pm_dest = ROOT / "data" / "famous_pm.json"
-pm_dest.write_text(json.dumps({"cards": pm_famous}, ensure_ascii=False,
-                              separators=(",", ":")), encoding="utf-8")
-pm_kb = pm_dest.stat().st_size / 1024
-print(f"Wrote {len(pm_famous)} Premodern famous cards -> {pm_dest} ({pm_kb:.0f} KB)")
-missing_pm = sorted(PM_FAMOUS - {c["n"] for c in pm_famous})
+for fmt, b in FORMAT_BITS.items():
+    pool = [c for c in out if c.get("ff", 0) & b]
+    fdest = ROOT / "data" / f"famous_{fmt}.json"
+    fdest.write_text(json.dumps({"cards": pool}, ensure_ascii=False,
+                                separators=(",", ":")), encoding="utf-8")
+    print(f"Wrote {len(pool)} {fmt} famous cards -> {fdest} ({fdest.stat().st_size / 1024:.0f} KB)")
+missing_pm = sorted(n for n in PM_FAMOUS if not FF.get(n, 0) & FORMAT_BITS["premodern"])
 if missing_pm:
     print(f"  {len(missing_pm)} PM_FAMOUS names not found: {missing_pm}")

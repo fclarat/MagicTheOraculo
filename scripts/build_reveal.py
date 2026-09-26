@@ -60,7 +60,7 @@ def redact(text, name):
 
 rows, missing = [], []
 for c in GAMES["cards"]:
-    if not (c.get("fam") or c.get("pmf")):
+    if not (c.get("fam") or c.get("ff")):
         continue
     name = c["n"]
     b = bulk.get(name)
@@ -88,8 +88,8 @@ for c in GAMES["cards"]:
     # which answer pools this card belongs to (Grimorio filters on the format)
     if c.get("fam"):
         rows[-1]["fam"] = 1
-    if c.get("pmf"):
-        rows[-1]["pmf"] = 1
+    if c.get("ff"):
+        rows[-1]["ff"] = c["ff"]
 
 OUT.write_text(json.dumps({"cards": rows}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 kb = OUT.stat().st_size / 1024

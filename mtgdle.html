@@ -17,7 +17,7 @@
 <meta name="twitter:description" content="Adiviná la carta de Magic del día por sus atributos: color, coste, tipo, rareza, subtipo.">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%A7%A9</text></svg>">
-<link rel="stylesheet" href="theme.css?v=6">
+<link rel="stylesheet" href="theme.css?v=8">
 <style>
   main { text-align:center; }
   .guessrow { position:relative; max-width:440px; margin:16px auto 0; }
@@ -77,18 +77,18 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
-<script src="extras.js?v=5"></script>
+<script src="extras.js?v=6"></script>
 <script>
 const $ = s => document.querySelector(s);
 let POOL=[], GUESSABLE=[], NAMEMAP=new Map(), TARGETS=[], target=null, tries=0, over=false, mode='daily', rows=[];
 
 // all.json = every card (typeable); famous.json = the curated famous set that the
 // daily ANSWER is drawn from, and the only cards with first-print year+set+subtype.
-Promise.all([fetch('data/all.json?v=5').then(r=>r.json()), fetch(MTO.famousURL).then(r=>r.json())])
+Promise.all([fetch('data/all.json?v=6').then(r=>r.json()), fetch(MTO.famousURL).then(r=>r.json())])
 .then(([a,d])=>{
   POOL=d.cards;
   const rich=new Map(POOL.map(c=>[c.n,c]));
-  GUESSABLE=MTO.pm ? a.cards.filter(c=>c.pm) : a.cards;   // you can type ANY card of the format
+  GUESSABLE=a.cards.filter(c=>MTO.inFmt(c.fm));          // you can type ANY card of the format
   for(const c of GUESSABLE){
     const r=rich.get(c.n);
     if(r){ c.st=r.st; c.yr=r.yr; c.set=r.set; c.fid=r.fid; c.fam=r.fam; }   // famous: full data

@@ -17,7 +17,7 @@
 <meta name="twitter:description" content="Adiviná la carta de Magic que se revela de a poco: color, tipo, coste, arte…">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%8E%B4</text></svg>">
-<link rel="stylesheet" href="theme.css?v=6">
+<link rel="stylesheet" href="theme.css?v=8">
 <style>
   main { text-align:center; }
   .art-wrap { position:relative; width:min(320px,80vw); aspect-ratio:626/457; margin:14px auto 0;
@@ -83,16 +83,16 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
-<script src="extras.js?v=5"></script>
+<script src="extras.js?v=6"></script>
 <script>
 const $ = s => document.querySelector(s);
 let POOL = [], NAMES = [], ALLNAMES = [], TARGETS = [], target = null, revealed = 0, used = 0, over = false, mode = 'daily';
 const MAX_TRIES = 6;
 
-Promise.all([fetch('data/names.json?v=2').then(r=>r.json()), fetch(MTO.famousURL).then(r => r.json())]).then(([a,d]) => {
+Promise.all([fetch('data/names.json?v=3').then(r=>r.json()), fetch(MTO.famousURL).then(r => r.json())]).then(([a,d]) => {
   POOL = d.cards;
   NAMES = POOL.map(c => c.n);
-  ALLNAMES = (MTO.pm && a.pm) || a.names;       // type ANY card of the format, not just the famous ones
+  ALLNAMES = MTO.names(a);       // type ANY card of the format, not just the famous ones
   TARGETS = POOL.filter(c => !c.t.includes('Land'));  // famous, non-land (art is recognizable)
   if (!TARGETS.length) TARGETS = POOL.slice(0, 400);
   $('#loading').hidden = true; $('#game').hidden = false;

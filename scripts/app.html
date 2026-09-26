@@ -107,11 +107,12 @@
   }
   .lede b { color: var(--gold); font-weight: 600; }
   .intro-actions { display: flex; justify-content: center; }
-  .fmt-row { display:flex; align-items:center; justify-content:center; gap:8px; margin:14px 0 0; font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); opacity:.85; }
-  .fmt-pick { display:inline-flex; gap:2px; padding:2px; border-radius:99px; background:rgba(0,0,0,.22); }
+  .fmt-row { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin:14px 0 0; font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); opacity:.85; }
+  .fmt-pick { display:inline-flex; flex-wrap:wrap; justify-content:center; gap:2px; padding:2px; border-radius:99px; background:rgba(0,0,0,.22); }
   .fmt-pick button { background:transparent; border:1px solid transparent; color:var(--muted); padding:4px 12px; border-radius:99px; cursor:pointer; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:.02em; text-transform:none; }
   .fmt-pick button:hover { color:var(--parchment); }
   .fmt-pick button.on { color:var(--gold); border-color:rgba(227,180,90,.55); background:rgba(227,180,90,.1); font-weight:600; }
+  @media (max-width:480px) { .fmt-row { gap:6px; } .fmt-pick { gap:0; } .fmt-pick button { padding:4px 8px; font-size:11.5px; } }
   .foot-note {
     text-align: center; color: var(--faint); font-size: 12.5px;
     margin-top: 30px; font-family: 'Jost', sans-serif; letter-spacing: .02em;
@@ -413,7 +414,7 @@
       </div>
       <div class="fmt-row"><span>Cartas</span>
         <div class="fmt-pick" id="fmt-pick" role="group" aria-label="Formato de cartas">
-          <button data-f="all">Todas</button><button data-f="pm" title="Cartas de 4th Edition a Scourge (1995–2003)">Premodern</button>
+          <button data-f="all">Todas</button><button data-f="modern">Modern</button><button data-f="pauper">Pauper</button><button data-f="legacy">Legacy</button><button data-f="premodern" title="Cartas de 4th Edition a Scourge (1995–2003)">Premodern</button>
         </div>
       </div>
       <p class="foot-note" id="intro-foot">Cargando el grimorio…</p>
@@ -580,11 +581,16 @@ const LS_KEY = 'mto_v1';
 const NAME2IDX = {}; CARDS.forEach((c, i) => NAME2IDX[c.n.toLowerCase()] = i);
 function loadMem() { try { const m = JSON.parse(localStorage.getItem(LS_KEY)); if (m && m.seen && m.misses) return m; } catch (e) {} return { seen: {}, misses: [] }; }
 let MEM = loadMem();
-// card format shared with the other games ('all' | 'pm' = Premodern)
+// card format shared with the other games; bits match each card's "fm" mask
+// (scripts/build_data.py FORMAT_BITS). 'pm' is the old code for Premodern.
+const FORMATS = { modern: [2, 'Modern'], pauper: [4, 'Pauper'], legacy: [8, 'Legacy'], premodern: [1, 'Premodern'] };
 let FMT = (() => {
-  try { const f = new URLSearchParams(location.search).get('f'); if (f === 'pm' || f === 'all') return f; } catch (e) {}
-  try { return localStorage.getItem('mto_fmt') === 'pm' ? 'pm' : 'all'; } catch (e) { return 'all'; }
+  const norm = f => (f === 'pm' ? 'premodern' : f);
+  try { const f = norm(new URLSearchParams(location.search).get('f')); if (f === 'all' || FORMATS[f]) return f; } catch (e) {}
+  try { const f = norm(localStorage.getItem('mto_fmt')); if (FORMATS[f]) return f; } catch (e) {}
+  return 'all';
 })();
+const inFmt = c => FMT === 'all' || ((c.fm || 0) & FORMATS[FMT][0]) !== 0;
 function saveMem() { try { localStorage.setItem(LS_KEY, JSON.stringify(MEM)); } catch (e) {} }
 function rememberCard(name) { MEM.seen[name] = (MEM.seen[name] || 0) + 1; saveMem(); }
 
@@ -624,7 +630,7 @@ function resetState() {
     let w = 1 / Math.pow((CARDS[i].rk || PRIOR_NULL) + PRIOR_BASE, PRIOR_EXP);
     const seen = MEM.seen[CARDS[i].n];        // cards you've thought of before rank higher
     if (seen) w *= 1 + Math.min(seen, 6) * 0.6;
-    if (FMT === 'pm' && !CARDS[i].pm) w *= 1e-9; // outside the format: kept only as a fallback
+    if (!inFmt(CARDS[i])) w *= 1e-9;          // outside the format: kept only as a fallback
     logp[i] = w; s += w;
   }
   for (let i = 0; i < NC; i++) logp[i] = Math.log(logp[i] / s);
@@ -1110,7 +1116,7 @@ $('#miss-input').addEventListener('input', e => {
   if (q.length < 2) { box.innerHTML = ''; return; }
   const hits = [];
   for (let i = 0; i < NC && hits.length < 8; i++)
-    if ((FMT !== 'pm' || CARDS[i].pm) && CARDS[i].n.toLowerCase().includes(q)) hits.push(i);
+    if (inFmt(CARDS[i]) && CARDS[i].n.toLowerCase().includes(q)) hits.push(i);
   box.innerHTML = hits.map(i => `<button class="miss-opt" data-i="${i}">${esc(CARDS[i].n)}</button>`).join('') +
     `<button class="miss-opt" data-i="-1">+ Agregar “${esc(raw)}” (no está en el grimorio)</button>`;
   box.querySelectorAll('.miss-opt').forEach(b => b.addEventListener('click', () => saveMiss(+b.dataset.i, raw)));
@@ -1236,8 +1242,8 @@ function esc(s) { return String(s).replace(/[&<>"]/g, m =>
 
 function renderFmt() {
   document.querySelectorAll('#fmt-pick button').forEach(b => b.classList.toggle('on', b.dataset.f === FMT));
-  const n = FMT === 'pm' ? CARDS.reduce((k, c) => k + (c.pm ? 1 : 0), 0) : NC;
-  $('#intro-foot').textContent = n + (FMT === 'pm' ? ' cartas Premodern' : ' cartas') + ' en el grimorio · elegí una y desafiame';
+  const n = CARDS.reduce((k, c) => k + (inFmt(c) ? 1 : 0), 0);
+  $('#intro-foot').textContent = n + ' cartas' + (FMT === 'all' ? '' : ' de ' + FORMATS[FMT][1]) + ' en el grimorio · elegí una y desafiame';
 }
 document.querySelectorAll('#fmt-pick button').forEach(b => b.addEventListener('click', () => {
   FMT = b.dataset.f;

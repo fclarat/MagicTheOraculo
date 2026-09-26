@@ -270,6 +270,18 @@ def keep(card):
     return True
 
 
+# formats a player can restrict the games to, as bits of each card's "fm" mask.
+# Keep in sync with FORMATS in extras.js and scripts/app.html.
+FORMAT_BITS = {"premodern": 1, "modern": 2, "pauper": 4, "legacy": 8}
+
+
+def format_mask(card):
+    """Bitmask of the formats the card belongs to. A banned card still belongs:
+    it is part of that format's card pool, just not playable."""
+    leg = card.get("legalities") or {}
+    return sum(b for f, b in FORMAT_BITS.items() if leg.get(f) in ("legal", "banned"))
+
+
 def bit(v):
     return "?" if v is None else ("1" if v else "0")
 
@@ -301,9 +313,9 @@ def main():
                    "co": "".join(sorted(ctx["colors"])), "t": ctx["type"],
                    "r": ctx["rarity"][:1] or "?", "rk": ctx["rank"], "f": fv,
                    "id": card.get("id")}  # Scryfall id -> reconstruct image URL
-            # Premodern (4th Edition .. Scourge): banned cards still belong to the era
-            if (card.get("legalities") or {}).get("premodern") in ("legal", "banned"):
-                rec["pm"] = 1
+            fm = format_mask(card)
+            if fm:
+                rec["fm"] = fm
             if T(ctx, "Creature") and ctx["power"] is not None:
                 rec["pt"] = f'{ctx["power"]}/{ctx["toughness"]}'
             out.append(rec)

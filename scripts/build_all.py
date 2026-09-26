@@ -6,7 +6,7 @@ the much smaller autocomplete-only list used by the other guessing games:
 
     n  name        co color       cmc mana value   mc mana cost
     t  type line   r  rarity      id  scryfall id  rk popularity rank
-    pm 1 when the card is part of the Premodern format
+    fm bitmask of the formats the card belongs to (see build_data.FORMAT_BITS)
 
 No feature bitstring (that's Oracle-only and heavy). Sorted most-popular first
 so autocomplete surfaces well-known cards. The daily ANSWER still comes from the
@@ -26,7 +26,7 @@ NAMES_OUT = ROOT / "data" / "names.json"
 # co/cmc/t/r power MTG-dle's guess comparison; n is the autocomplete list.
 # mc/id/rk aren't needed for typing (guessed cards show no image), so drop them
 # to keep the download small. Sort by rank first, then discard it.
-KEEP = ("n", "co", "cmc", "t", "r", "pm")
+KEEP = ("n", "co", "cmc", "t", "r", "fm")
 BIG = 10 ** 9  # cards without a rank sort to the end
 
 rows = []
@@ -42,8 +42,9 @@ for c in CARDS:
 rows.sort(key=lambda pair: pair[0])
 rows = [r for _, r in rows]
 OUT.write_text(json.dumps({"cards": rows}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-# "pm" is the Premodern-only autocomplete list, used when that format is picked.
-names = {"names": [r["n"] for r in rows], "pm": [r["n"] for r in rows if r.get("pm")]}
+# "fm" holds one hex digit per name (its format mask), so the games can narrow
+# the autocomplete to the picked format without a name list per format.
+names = {"names": [r["n"] for r in rows], "fm": "".join(f'{r.get("fm", 0):x}' for r in rows)}
 NAMES_OUT.write_text(json.dumps(names, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 kb = OUT.stat().st_size / 1024
 names_kb = NAMES_OUT.stat().st_size / 1024
