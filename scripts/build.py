@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent
 # games.json is generated once before years are fetched, then again to merge
 # the first-print metadata into its final and famous subsets.
 STEPS = (
+    "fetch_meta.py",          # only fetches when data/meta.json is missing
     "build_data.py",
     "build_all.py",
     "build_games_data.py",

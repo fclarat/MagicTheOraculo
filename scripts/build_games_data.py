@@ -2,8 +2,9 @@
 """
 Build data/games.json: a lean, popularity-ranked subset of the cards for the
 mini-games. It also writes famous.json, the ~600-card answer pool used by every
-game except MTG-dle, and famous_<format>.json, the same idea restricted to
-each format a player can pick (Modern, Pauper, Legacy, Premodern). Only the fields the games need are retained.
+game except MTG-dle, and famous_<format>.json, the answer pool of each format
+a player can pick (Modern, Pauper, Legacy, Premodern). Only the fields the
+games need are retained.
 
     python scripts/build_games_data.py
 """
@@ -33,9 +34,14 @@ FAMOUS = {
     "Sheoldred, the Apocalypse", "Ugin, the Spirit Dragon", "Karn Liberated",
     "Emrakul, the Promised End", "Nicol Bolas, God-Pharaoh", "Atraxa, Praetors' Voice",
 }
-# Per-format answer pools: the format's most popular cards plus the famous
-# cards above that belong to it. Premodern also gets the era's icons, which
-# EDHREC (a Commander site) underrates. Bits match build_data.FORMAT_BITS.
+# Per-format answer pools. Bits match build_data.FORMAT_BITS.
+#   "meta"   the format's ~600 most played cards in competitive decks (MTGTop8,
+#            see fetch_meta.py; tagged as "mt" by build_data.py)
+#   "edhrec" the previous pools, kept as a backup: the format's 400 most popular
+#            cards on EDHREC plus the famous cards above that belong to it, and
+#            for Premodern the era's icons, which EDHREC (a Commander site)
+#            underrates. Switch back by setting POOL_SOURCE and rebuilding.
+POOL_SOURCE = "meta"
 FORMAT_BITS = {"premodern": 1, "modern": 2, "pauper": 4, "legacy": 8}
 FMT_N = 400
 PM_FAMOUS = {
@@ -58,11 +64,22 @@ PM_FAMOUS = {
 ranked = sorted((c for c in cards if c.get("id") and "//" not in c["n"]),
                 key=lambda c: c["rk"] if c.get("rk") is not None else 10 ** 9)
 
-FF = {}   # name -> mask of the formats whose answer pool includes it
-for fmt, b in FORMAT_BITS.items():
+def edhrec_pool(fmt, b):
     fr = [c for c in ranked if c.get("fm", 0) & b]
     icons = FAMOUS | (PM_FAMOUS if fmt == "premodern" else set())
-    for c in fr[:FMT_N] + [c for c in fr if c["n"] in icons]:
+    return fr[:FMT_N] + [c for c in fr if c["n"] in icons]
+
+
+def meta_pool(fmt, b):
+    return [c for c in ranked if c.get("mt", 0) & b]
+
+
+FF = {}   # name -> mask of the formats whose answer pool includes it
+for fmt, b in FORMAT_BITS.items():
+    pool = meta_pool(fmt, b) if POOL_SOURCE == "meta" else edhrec_pool(fmt, b)
+    if not pool:
+        raise SystemExit(f"empty {fmt} pool: run scripts/fetch_meta.py, then build_data.py")
+    for c in pool:
         FF[c["n"]] = FF.get(c["n"], 0) | b
 
 # keep every format answer even if it falls outside the top-N popularity cut
@@ -84,6 +101,8 @@ for c in top:
     })
     if c.get("fm"):
         out[-1]["fm"] = c["fm"]
+    if c.get("mt"):
+        out[-1]["mt"] = c["mt"]
     if c["n"] in FF:
         out[-1]["ff"] = FF[c["n"]]
 
@@ -127,5 +146,5 @@ for fmt, b in FORMAT_BITS.items():
                                 separators=(",", ":")), encoding="utf-8")
     print(f"Wrote {len(pool)} {fmt} famous cards -> {fdest} ({fdest.stat().st_size / 1024:.0f} KB)")
 missing_pm = sorted(n for n in PM_FAMOUS if not FF.get(n, 0) & FORMAT_BITS["premodern"])
-if missing_pm:
+if POOL_SOURCE == "edhrec" and missing_pm:
     print(f"  {len(missing_pm)} PM_FAMOUS names not found: {missing_pm}")

@@ -14,6 +14,7 @@ Output: data/cards.json  (feature catalog + compact per-card records)
 import gzip
 import json
 import re
+import unicodedata
 import urllib.request
 from pathlib import Path
 
@@ -282,6 +283,40 @@ def format_mask(card):
     return sum(b for f, b in FORMAT_BITS.items() if leg.get(f) in ("legal", "banned"))
 
 
+# Competitive staples: the META_N most played cards of each format in MTGTop8
+# decks (data/meta.json, from fetch_meta.py) get that format's bit in "mt".
+# Split and double-faced cards don't count towards META_N: the mini-games skip
+# them, and each format's answer pool should still reach META_N cards.
+META = ROOT / "data" / "meta.json"
+META_N = 600
+
+
+def norm_name(n):
+    n = unicodedata.normalize("NFKD", n.replace("Æ", "Ae").replace("æ", "ae"))
+    return "".join(ch for ch in n if not unicodedata.combining(ch)).lower().strip()
+
+
+def meta_masks(cards_by_norm):
+    """{card name: mask of formats where it is a competitive staple}"""
+    if not META.exists():
+        print(f"  no {META.name}: run scripts/fetch_meta.py for competitive pools")
+        return {}
+    masks = {}
+    for fmt, rows in json.loads(META.read_text(encoding="utf-8"))["formats"].items():
+        b, kept = FORMAT_BITS[fmt], 0
+        for name, *_ in rows:
+            c = cards_by_norm.get(norm_name(name))
+            if not c or not format_mask(c) & b:
+                continue
+            masks[c["name"]] = masks.get(c["name"], 0) | b
+            if "//" not in c["name"]:
+                kept += 1
+                if kept >= META_N:
+                    break
+        print(f"  {fmt}: {kept} competitive staples")
+    return masks
+
+
 def bit(v):
     return "?" if v is None else ("1" if v else "0")
 
@@ -293,32 +328,44 @@ def main():
         print(f"Using cached {GZ.name} ({GZ.stat().st_size/1e6:.1f} MB) "
               "-- delete it to refresh")
 
-    seen, out, n = set(), [], 0
+    kept = []
     with gzip.open(GZ, "rt", encoding="utf-8") as f:
         for line in f:
             line = line.strip().rstrip(",")
             if not line or line in ("[", "]"):
                 continue
-            card = json.loads(line)
-            n += 1
-            if not keep(card):
-                continue
-            name = card["name"]
-            if name in seen:
-                continue
-            seen.add(name)
-            ctx = normalize(card)
-            fv = "".join(bit(fn(ctx)) for _, _, _, fn in FEATURES)
-            rec = {"n": ctx["name"], "mc": ctx["mana_cost"], "cmc": int(ctx["cmc"]),
-                   "co": "".join(sorted(ctx["colors"])), "t": ctx["type"],
-                   "r": ctx["rarity"][:1] or "?", "rk": ctx["rank"], "f": fv,
-                   "id": card.get("id")}  # Scryfall id -> reconstruct image URL
-            fm = format_mask(card)
-            if fm:
-                rec["fm"] = fm
-            if T(ctx, "Creature") and ctx["power"] is not None:
-                rec["pt"] = f'{ctx["power"]}/{ctx["toughness"]}'
-            out.append(rec)
+            kept.append(json.loads(line))
+    n = len(kept)
+    kept = [c for c in kept if keep(c)]
+
+    # MTGTop8 lists double-faced cards by their front face
+    by_norm = {}
+    for c in kept:
+        by_norm.setdefault(norm_name(c["name"]), c)
+        if "//" in c["name"]:
+            by_norm.setdefault(norm_name(c["name"].split("//")[0]), c)
+    meta = meta_masks(by_norm)
+
+    seen, out = set(), []
+    for card in kept:
+        name = card["name"]
+        if name in seen:
+            continue
+        seen.add(name)
+        ctx = normalize(card)
+        fv = "".join(bit(fn(ctx)) for _, _, _, fn in FEATURES)
+        rec = {"n": ctx["name"], "mc": ctx["mana_cost"], "cmc": int(ctx["cmc"]),
+               "co": "".join(sorted(ctx["colors"])), "t": ctx["type"],
+               "r": ctx["rarity"][:1] or "?", "rk": ctx["rank"], "f": fv,
+               "id": card.get("id")}  # Scryfall id -> reconstruct image URL
+        fm = format_mask(card)
+        if fm:
+            rec["fm"] = fm
+        if name in meta:
+            rec["mt"] = meta[name]
+        if T(ctx, "Creature") and ctx["power"] is not None:
+            rec["pt"] = f'{ctx["power"]}/{ctx["toughness"]}'
+        out.append(rec)
 
     # popularity-first (nulls last) so the prior & tie-breaks favour known cards
     out.sort(key=lambda r: r["rk"] if r["rk"] is not None else 10**9)

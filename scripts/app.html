@@ -543,6 +543,7 @@ const P_YES = { 1: 0.85, 0: 0.15, [-1]: 0.5 };
 // leans harder on well-known cards, converging in fewer questions on average.
 // "Precision (mind-reader)" tuning, chosen with scripts/optimize.js: keep the
 // satisfying single-card guess, only fall back to a pick-list for genuine twins.
+const META_BOOST = 20;  // in a format, its most played competitive cards come to mind first
 let PRIOR_EXP = 0.35, PRIOR_BASE = 40, PRIOR_NULL = 9000; // mild popularity lean breaks ties toward famous cards
 let SEL_BAND  = 0.9;    // randomize only among questions within this frac of best gain
 let GUESS_P   = 0.86;   // confidence needed to make a single confident guess
@@ -631,6 +632,7 @@ function resetState() {
     const seen = MEM.seen[CARDS[i].n];        // cards you've thought of before rank higher
     if (seen) w *= 1 + Math.min(seen, 6) * 0.6;
     if (!inFmt(CARDS[i])) w *= 1e-9;          // outside the format: kept only as a fallback
+    else if (FMT !== 'all' && (CARDS[i].mt & FORMATS[FMT][0])) w *= META_BOOST;  // competitive staple
     logp[i] = w; s += w;
   }
   for (let i = 0; i < NC; i++) logp[i] = Math.log(logp[i] / s);

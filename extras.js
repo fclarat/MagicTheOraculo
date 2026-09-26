@@ -165,7 +165,7 @@ window.MTO = (function () {
   }
 
   return { end, stats, record, statsHtml, global: globalStats, FORMATS, fmt, bit, inFmt, names,
-    famousURL: F ? `data/famous_${fmt}.json?v=1` : 'data/famous.json?v=1' };
+    famousURL: F ? `data/famous_${fmt}.json?v=2` : 'data/famous.json?v=1' };
 })();
 
 /* colorblind-safe palette (shared + persisted): swaps green/gold for orange/blue.

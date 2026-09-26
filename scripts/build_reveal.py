@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build data/reveal.json for the "Grimorio" game: the full card sheet of each
+Build data/reveal.json (and reveal_<format>.json) for the "Grimorio" game: the full card sheet of each
 famous card (flavor, rules, color, cost, type, power/toughness) with the NAME
 redacted from the text, so the player guesses everything-but-the-name.
 
@@ -85,15 +85,20 @@ for c in GAMES["cards"]:
         "pt": pt,
         "fid": y.get("id") or c.get("fid") or c.get("id"),
     })
-    # which answer pools this card belongs to (Grimorio filters on the format)
-    if c.get("fam"):
-        rows[-1]["fam"] = 1
-    if c.get("ff"):
-        rows[-1]["ff"] = c["ff"]
+    # which answer pools this card belongs to (one file per pool, below)
+    rows[-1]["fam"] = c.get("fam", 0)
+    rows[-1]["ff"] = c.get("ff", 0)
 
-OUT.write_text(json.dumps({"cards": rows}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-kb = OUT.stat().st_size / 1024
-withfl = sum(1 for r in rows if r["fl"])
-print(f"Wrote {len(rows)} cards ({withfl} with flavor) -> {OUT} ({kb:.0f} KB)")
+# reveal.json holds the default pool and reveal_<format>.json each format's,
+# so Grimorio only downloads the cards of the format being played
+FORMAT_BITS = {"premodern": 1, "modern": 2, "pauper": 4, "legacy": 8}
+pools = {OUT: [r for r in rows if r["fam"]]}
+pools.update({OUT.with_name(f"reveal_{f}.json"): [r for r in rows if r["ff"] & b]
+              for f, b in FORMAT_BITS.items()})
+for dest, pool in pools.items():
+    pool = [{k: v for k, v in r.items() if k not in ("fam", "ff")} for r in pool]
+    dest.write_text(json.dumps({"cards": pool}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    withfl = sum(1 for r in pool if r["fl"])
+    print(f"Wrote {len(pool)} cards ({withfl} with flavor) -> {dest.name} ({dest.stat().st_size / 1024:.0f} KB)")
 if missing:
     print(f"  {len(missing)} famous not found in bulk (e.g. {missing[:6]})")

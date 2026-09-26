@@ -32,7 +32,8 @@ blackcatmagic/
 │   ├── names.json      Índice liviano de nombres para autocompletar
 │   ├── famous.json     Pool curado de respuestas diarias
 │   ├── famous_<formato>.json  Ídem por formato (modern, pauper, legacy, premodern)
-│   ├── reveal.json     Pistas del Grimorio
+│   ├── reveal.json     Pistas del Grimorio (+ reveal_<formato>.json)
+│   ├── meta.json       Cartas más jugadas por formato (MTGTop8)
 │   └── years.json      Año y primera impresión para Timeline
 └── scripts/
     ├── build.py        Pipeline completo, en el orden correcto
@@ -49,6 +50,19 @@ baneadas en ese formato según Scryfall). La elección se guarda en el
 dispositivo y se comparte entre juegos; un link con `?f=modern`, `?f=pauper`,
 `?f=legacy` o `?f=premodern` abre directamente en ese formato. Cada formato
 lleva sus propias estadísticas y rachas.
+
+Las respuestas de cada formato salen de sus **600 cartas más jugadas en mazos
+competitivos** según [MTGTop8](https://www.mtgtop8.com) (maindeck + sideboard,
+mazos de 2026; sin tierras básicas ni cartas partidas o de dos caras). Es una
+foto guardada en `data/meta.json`; para actualizarla:
+
+```bash
+python scripts/fetch_meta.py --refresh
+python scripts/build.py
+```
+
+El pool anterior (popularidad en EDHREC) sigue disponible como respaldo:
+poné `POOL_SOURCE = "edhrec"` en `scripts/build_games_data.py` y rebuildeá.
 
 ## Regenerar / buildear
 

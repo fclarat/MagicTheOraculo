@@ -102,14 +102,14 @@
     <p class="foot" id="loading">Abriendo el grimorio…</p>
   </main>
 </div>
-<script src="extras.js?v=6"></script>
+<script src="extras.js?v=7"></script>
 <script>
 const $ = s => document.querySelector(s);
 let TARGETS=[], ALLNAMES=[], target=null, clues=[], revealed=1, over=false, mode='daily';
 
-Promise.all([fetch('data/names.json?v=3').then(r=>r.json()), fetch('data/reveal.json?v=3').then(r=>r.json())]).then(([a,rv])=>{
+Promise.all([fetch('data/names.json?v=3').then(r=>r.json()), fetch(MTO.fmt === 'all' ? 'data/reveal.json?v=4' : `data/reveal_${MTO.fmt}.json?v=1`).then(r=>r.json())]).then(([a,rv])=>{
   ALLNAMES = MTO.names(a);
-  TARGETS = rv.cards.filter(c => MTO.bit ? (c.ff & MTO.bit) : c.fam);
+  TARGETS = rv.cards;
   if(!TARGETS.length){ $('#loading').textContent='No pude cargar las cartas 😿'; return; }
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });
