@@ -120,17 +120,23 @@ window.MTO = (function () {
     return s;
   }
 
-  // "Todas / Premodern" pill next to the game's #modepick (or into #fmtslot).
+  // "Cartas: Todas / Premodern" row under the game's #modepick (or into #fmtslot).
   // Switching reloads, since each format downloads a different card pool.
   function fmtPick() {
-    const slot = document.getElementById('fmtslot'), mp = document.getElementById('modepick');
+    let slot = document.getElementById('fmtslot');
+    const mp = document.getElementById('modepick');
     if (!slot && !mp) return;
+    if (!slot) {
+      slot = document.createElement('div'); slot.className = 'fmtrow'; slot.id = 'fmtslot';
+      slot.innerHTML = '<span>Cartas</span>';
+      mp.insertAdjacentElement('afterend', slot);
+    }
     const el = document.createElement('div');
-    el.className = 'modepick fmtpick'; el.id = 'fmtpick';
+    el.className = 'fmtpick'; el.id = 'fmtpick';
     el.setAttribute('role', 'group'); el.setAttribute('aria-label', 'Formato de cartas');
     el.innerHTML = `<button data-f="all"${pm ? '' : ' class="on"'} title="Todas las cartas de Magic">Todas</button>` +
       `<button data-f="pm"${pm ? ' class="on"' : ''} title="Cartas de 4th Edition a Scourge (1995–2003)">Premodern</button>`;
-    if (slot) slot.appendChild(el); else mp.insertAdjacentElement('afterend', el);
+    slot.appendChild(el);
     el.querySelectorAll('button').forEach(b => b.onclick = () => {
       if (b.dataset.f === fmt) return;
       try { localStorage.setItem('mto_fmt', b.dataset.f); } catch (e) {}

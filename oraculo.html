@@ -129,9 +129,11 @@
   }
   .lede b { color: var(--gold); font-weight: 600; }
   .intro-actions { display: flex; justify-content: center; }
-  .fmt-pick { display:flex; width:fit-content; margin:14px auto 0; border:1px solid rgba(255,255,255,.18); border-radius:99px; overflow:hidden; }
-  .fmt-pick button { background:transparent; border:none; color:var(--muted); padding:7px 16px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13px; }
-  .fmt-pick button.on { background:var(--gold); color:#241a06; font-weight:600; }
+  .fmt-row { display:flex; align-items:center; justify-content:center; gap:8px; margin:14px 0 0; font-family:'Jost',sans-serif; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); opacity:.85; }
+  .fmt-pick { display:inline-flex; gap:2px; padding:2px; border-radius:99px; background:rgba(0,0,0,.22); }
+  .fmt-pick button { background:transparent; border:1px solid transparent; color:var(--muted); padding:4px 12px; border-radius:99px; cursor:pointer; font-family:'Jost',sans-serif; font-size:12px; letter-spacing:.02em; text-transform:none; }
+  .fmt-pick button:hover { color:var(--parchment); }
+  .fmt-pick button.on { color:var(--gold); border-color:rgba(227,180,90,.55); background:rgba(227,180,90,.1); font-weight:600; }
   .foot-note {
     text-align: center; color: var(--faint); font-size: 12.5px;
     margin-top: 30px; font-family: 'Jost', sans-serif; letter-spacing: .02em;
@@ -431,8 +433,10 @@
       <div class="intro-actions">
         <button class="btn btn-primary" id="btn-start">Empezar la sesión</button>
       </div>
-      <div class="fmt-pick" id="fmt-pick" role="group" aria-label="Formato de cartas">
-        <button data-f="all">Todas</button><button data-f="pm" title="Cartas de 4th Edition a Scourge (1995–2003)">Premodern</button>
+      <div class="fmt-row"><span>Cartas</span>
+        <div class="fmt-pick" id="fmt-pick" role="group" aria-label="Formato de cartas">
+          <button data-f="all">Todas</button><button data-f="pm" title="Cartas de 4th Edition a Scourge (1995–2003)">Premodern</button>
+        </div>
       </div>
       <p class="foot-note" id="intro-foot">Cargando el grimorio…</p>
       <details class="mem" id="mem-box" hidden>
