@@ -17,7 +17,7 @@
 <meta name="twitter:description" content="Agrupá 16 cartas de Magic en 4 grupos por su conexión oculta.">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%97</text></svg>">
-<link rel="stylesheet" href="theme.css?v=4">
+<link rel="stylesheet" href="theme.css?v=5">
 <style>
   main { text-align:center; }
   .sub { color:var(--muted); font-size:14.5px; margin:8px auto 4px; }
@@ -77,14 +77,14 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
-<script src="extras.js?v=3"></script>
+<script src="extras.js?v=4"></script>
 <script>
 const $ = s => document.querySelector(s);
 let POOL=[], FAM=[], mode='daily', groups=[], cats=[], tiles=[], sel=[], solved=[], mistakes=0, over=false, locked=false, guessLog=[];
 const MAX_MISTAKES=4;
 const GROUP_COLORS = ['#e3b45a', '#57b368', '#4a9fd6', '#b98bd0'];
 
-fetch('data/famous.json?v=1').then(r=>r.json()).then(d=>{
+fetch(MTO.famousURL).then(r=>r.json()).then(d=>{
   POOL=d.cards; FAM=POOL;
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });

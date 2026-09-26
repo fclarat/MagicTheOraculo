@@ -17,7 +17,7 @@
 <meta name="twitter:description" content="Ordená cartas de Magic por su año de salida, de la más vieja a la más nueva.">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%97%93</text></svg>">
-<link rel="stylesheet" href="theme.css?v=4">
+<link rel="stylesheet" href="theme.css?v=5">
 <style>
   .wrap { max-width:840px; }          /* wider so 5 bigger cards fit one row */
   main { text-align:center; }
@@ -64,13 +64,13 @@
     <p class="foot" id="loading">Cargando el grimorio…</p>
   </main>
 </div>
-<script src="extras.js?v=3"></script>
+<script src="extras.js?v=4"></script>
 <script>
 const $ = s => document.querySelector(s);
 let CARDS=[], order=[], mode='daily', tries=0, over=false, revealed=false, drag=null;
 const N=5;
 
-Promise.all([fetch('data/famous.json?v=1').then(r=>r.json()), fetch('data/years.json?v=4').then(r=>r.json()).catch(()=>({}))])
+Promise.all([fetch(MTO.famousURL).then(r=>r.json()), fetch('data/years.json?v=5').then(r=>r.json()).catch(()=>({}))])
 .then(([g,years])=>{
   CARDS = g.cards.filter(c=>years[c.n] && years[c.n].y).map(c=>({...c, yr:years[c.n].y, fid:years[c.n].id}));
   if(CARDS.length < 20){ $('#loading').textContent='Faltan datos de años (se están cargando)…'; return; }

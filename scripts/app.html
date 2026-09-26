@@ -107,6 +107,9 @@
   }
   .lede b { color: var(--gold); font-weight: 600; }
   .intro-actions { display: flex; justify-content: center; }
+  .fmt-pick { display:flex; width:fit-content; margin:14px auto 0; border:1px solid rgba(255,255,255,.18); border-radius:99px; overflow:hidden; }
+  .fmt-pick button { background:transparent; border:none; color:var(--muted); padding:7px 16px; cursor:pointer; font-family:'Jost',sans-serif; font-size:13px; }
+  .fmt-pick button.on { background:var(--gold); color:#241a06; font-weight:600; }
   .foot-note {
     text-align: center; color: var(--faint); font-size: 12.5px;
     margin-top: 30px; font-family: 'Jost', sans-serif; letter-spacing: .02em;
@@ -406,6 +409,9 @@
       <div class="intro-actions">
         <button class="btn btn-primary" id="btn-start">Empezar la sesión</button>
       </div>
+      <div class="fmt-pick" id="fmt-pick" role="group" aria-label="Formato de cartas">
+        <button data-f="all">Todas</button><button data-f="pm" title="Cartas de 4th Edition a Scourge (1995–2003)">Premodern</button>
+      </div>
       <p class="foot-note" id="intro-foot">Cargando el grimorio…</p>
       <details class="mem" id="mem-box" hidden>
         <summary id="mem-summary"></summary>
@@ -570,6 +576,11 @@ const LS_KEY = 'mto_v1';
 const NAME2IDX = {}; CARDS.forEach((c, i) => NAME2IDX[c.n.toLowerCase()] = i);
 function loadMem() { try { const m = JSON.parse(localStorage.getItem(LS_KEY)); if (m && m.seen && m.misses) return m; } catch (e) {} return { seen: {}, misses: [] }; }
 let MEM = loadMem();
+// card format shared with the other games ('all' | 'pm' = Premodern)
+let FMT = (() => {
+  try { const f = new URLSearchParams(location.search).get('f'); if (f === 'pm' || f === 'all') return f; } catch (e) {}
+  try { return localStorage.getItem('mto_fmt') === 'pm' ? 'pm' : 'all'; } catch (e) { return 'all'; }
+})();
 function saveMem() { try { localStorage.setItem(LS_KEY, JSON.stringify(MEM)); } catch (e) {} }
 function rememberCard(name) { MEM.seen[name] = (MEM.seen[name] || 0) + 1; saveMem(); }
 
@@ -609,6 +620,7 @@ function resetState() {
     let w = 1 / Math.pow((CARDS[i].rk || PRIOR_NULL) + PRIOR_BASE, PRIOR_EXP);
     const seen = MEM.seen[CARDS[i].n];        // cards you've thought of before rank higher
     if (seen) w *= 1 + Math.min(seen, 6) * 0.6;
+    if (FMT === 'pm' && !CARDS[i].pm) w *= 1e-9; // outside the format: kept only as a fallback
     logp[i] = w; s += w;
   }
   for (let i = 0; i < NC; i++) logp[i] = Math.log(logp[i] / s);
@@ -1093,7 +1105,8 @@ $('#miss-input').addEventListener('input', e => {
   const raw = e.target.value.trim(), q = raw.toLowerCase(), box = $('#miss-sugg');
   if (q.length < 2) { box.innerHTML = ''; return; }
   const hits = [];
-  for (let i = 0; i < NC && hits.length < 8; i++) if (CARDS[i].n.toLowerCase().includes(q)) hits.push(i);
+  for (let i = 0; i < NC && hits.length < 8; i++)
+    if ((FMT !== 'pm' || CARDS[i].pm) && CARDS[i].n.toLowerCase().includes(q)) hits.push(i);
   box.innerHTML = hits.map(i => `<button class="miss-opt" data-i="${i}">${esc(CARDS[i].n)}</button>`).join('') +
     `<button class="miss-opt" data-i="-1">+ Agregar “${esc(raw)}” (no está en el grimorio)</button>`;
   box.querySelectorAll('.miss-opt').forEach(b => b.addEventListener('click', () => saveMiss(+b.dataset.i, raw)));
@@ -1217,5 +1230,15 @@ function esc(s) { return String(s).replace(/[&<>"]/g, m =>
   frame();
 })();
 
-$('#intro-foot').textContent = NC + ' cartas en el grimorio · elegí una y desafiame';
+function renderFmt() {
+  document.querySelectorAll('#fmt-pick button').forEach(b => b.classList.toggle('on', b.dataset.f === FMT));
+  const n = FMT === 'pm' ? CARDS.reduce((k, c) => k + (c.pm ? 1 : 0), 0) : NC;
+  $('#intro-foot').textContent = n + (FMT === 'pm' ? ' cartas Premodern' : ' cartas') + ' en el grimorio · elegí una y desafiame';
+}
+document.querySelectorAll('#fmt-pick button').forEach(b => b.addEventListener('click', () => {
+  FMT = b.dataset.f;
+  try { localStorage.setItem('mto_fmt', FMT); } catch (e) {}
+  renderFmt();
+}));
+renderFmt();
 </script>

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fetch the FIRST-print year of each famous card (for the Timeline game) from
+Fetch the FIRST-print year of each famous (or Premodern-famous) card (for the Timeline game) from
 Scryfall and cache it to data/years.json ({name: year}). Resumable: re-running
 only fetches names not already cached.
 
@@ -28,7 +28,7 @@ if OUT.exists():
 def done(v):   # a good cached entry has the year, first-print id and its set
     return isinstance(v, dict) and v.get("y") and v.get("id") and v.get("set")
 
-names = [c["n"] for c in GAMES["cards"] if c.get("fam")]
+names = [c["n"] for c in GAMES["cards"] if c.get("fam") or c.get("pmf")]
 todo = [n for n in names if not done(years.get(n))]   # (re)fetch missing/old-format/failed
 print(f"{len(names)} famous cards, {len(todo)} to fetch")
 

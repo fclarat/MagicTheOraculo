@@ -17,7 +17,7 @@
 <meta name="twitter:description" content="Adiviná la carta de Magic por su ficha completa — flavor, reglas, color, coste, tipo y fuerza/resistencia — todo menos el nombre.">
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%93%96</text></svg>">
-<link rel="stylesheet" href="theme.css?v=4">
+<link rel="stylesheet" href="theme.css?v=5">
 <style>
   main { text-align:center; }
   .sub { color:var(--muted); font-size:14.5px; margin:10px auto 0; max-width:480px; }
@@ -102,14 +102,14 @@
     <p class="foot" id="loading">Abriendo el grimorio…</p>
   </main>
 </div>
-<script src="extras.js?v=3"></script>
+<script src="extras.js?v=4"></script>
 <script>
 const $ = s => document.querySelector(s);
 let TARGETS=[], ALLNAMES=[], target=null, clues=[], revealed=1, over=false, mode='daily';
 
-Promise.all([fetch('data/names.json?v=1').then(r=>r.json()), fetch('data/reveal.json?v=1').then(r=>r.json())]).then(([a,rv])=>{
-  ALLNAMES = a.names;
-  TARGETS = rv.cards;
+Promise.all([fetch('data/names.json?v=2').then(r=>r.json()), fetch('data/reveal.json?v=2').then(r=>r.json())]).then(([a,rv])=>{
+  ALLNAMES = (MTO.pm && a.pm) || a.names;
+  TARGETS = rv.cards.filter(c => MTO.pm ? c.pmf : c.fam);
   if(!TARGETS.length){ $('#loading').textContent='No pude cargar las cartas 😿'; return; }
   $('#loading').hidden=true; $('#game').hidden=false; start();
 }).catch(()=>{ $('#loading').textContent='No pude cargar las cartas 😿'; });

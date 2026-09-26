@@ -301,6 +301,9 @@ def main():
                    "co": "".join(sorted(ctx["colors"])), "t": ctx["type"],
                    "r": ctx["rarity"][:1] or "?", "rk": ctx["rank"], "f": fv,
                    "id": card.get("id")}  # Scryfall id -> reconstruct image URL
+            # Premodern (4th Edition .. Scourge): banned cards still belong to the era
+            if (card.get("legalities") or {}).get("premodern") in ("legal", "banned"):
+                rec["pm"] = 1
             if T(ctx, "Creature") and ctx["power"] is not None:
                 rec["pt"] = f'{ctx["power"]}/{ctx["toughness"]}'
             out.append(rec)

@@ -18,7 +18,7 @@
 <meta name="twitter:image" content="https://fclarat.github.io/MagicTheOraculo/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%94%AE</text></svg>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mana-font@1.17.0/css/mana.min.css">
-<link rel="stylesheet" href="theme.css?v=4">
+<link rel="stylesheet" href="theme.css?v=5">
 <style>
   .wrap { max-width:780px; }
   .mast { margin:6px 0 4px; }
@@ -165,6 +165,7 @@
     </div>
   </header>
   <p class="intro">Elegí un juego. Todos usan las cartas reales de Scryfall, con modo del día e infinito.</p>
+  <div class="fmtrow" id="fmtslot"><span>Jugar con</span></div>
   <div class="rule"><i>◆</i></div>
   <div class="streakwrap"><span id="streak" class="streakchip" hidden></span></div>
 
@@ -224,6 +225,7 @@
     <span class="legal">Magic The Mini Games is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. © Wizards of the Coast LLC.</span>
   </p>
 </div>
+<script src="extras.js?v=4"></script>
 <script>
   const GC=['#e3b45a','#57b368','#4a9fd6','#b98bd0'];
   const cells=[]; for(let g=0;g<4;g++) for(let k=0;k<4;k++) cells.push(g);

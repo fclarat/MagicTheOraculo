@@ -31,6 +31,7 @@ blackcatmagic/
 │   ├── all.json        Datos completos para MTG-dle
 │   ├── names.json      Índice liviano de nombres para autocompletar
 │   ├── famous.json     Pool curado de respuestas diarias
+│   ├── famous_pm.json  Ídem, solo cartas Premodern
 │   ├── reveal.json     Pistas del Grimorio
 │   └── years.json      Año y primera impresión para Timeline
 └── scripts/
@@ -39,6 +40,14 @@ blackcatmagic/
     ├── app.html        Fuente única del Oráculo
     └── build_site.py   Genera oraculo.html + artifact.html
 ```
+
+## Formatos
+
+Todos los juegos se pueden jugar con **todas las cartas** o solo con cartas
+**Premodern** (las legales o baneadas en ese formato según Scryfall). La
+elección se guarda en el dispositivo y se comparte entre juegos; un link con
+`?f=pm` abre directamente en Premodern. Premodern lleva sus propias
+estadísticas y rachas.
 
 ## Regenerar / buildear
 
@@ -75,6 +84,7 @@ Subí el repo a GitHub y activá Pages sobre la rama `main` / carpeta raíz.
 - [x] Arte real de las cartas desde el CDN de Scryfall en la versión web.
 - [ ] Comprimir las preguntas de color (hoy pregunta color por color).
 - [ ] Modo “adiviná vos”: el juego piensa una carta y vos preguntás.
+- [x] Formato Premodern (4th Edition a Scourge) elegible en todos los juegos.
 - [ ] Más pools elegibles (Commander, Standard, Vintage…).
 
 ## Créditos
